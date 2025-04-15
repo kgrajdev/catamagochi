@@ -12,9 +12,9 @@ export default class ColorScheme {
             themeSecondaryLight: '#7ec4df',
             themeSecondaryDark: '#296d83',
 
-            themeTertiary: '#61504e',
-            themeTertiaryLight: '#745b58',
-            themeTertiaryDark: '#443836',
+            themeTertiary: '#4a4a4a',
+            themeTertiaryLight: '#5e5d5d',
+            themeTertiaryDark: '#3c3c3c',
 
             themeError: '#910000',
             themeSuccess: '#009718',
