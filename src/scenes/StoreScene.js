@@ -39,6 +39,8 @@ export default class StoreScene extends Phaser.Scene {
         this.coinsLabel = this.add.text(this.sceneHeading.x+350, this.sceneHeading.y, 'Coins: ', {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get('themeLight')})
         this.coinsValue = this.add.text(this.coinsLabel.x+this.coinsLabel.width+5, this.coinsLabel.y, this.gameState.coins, {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get('themeLight')})
 
+        // ==== PREVIEW HOLDER
+        this.previewImage = this.add.image(this.game.config.width-200, this.game.config.height-130, 'decor-holder')
     }
 
     drawShop() {
@@ -59,7 +61,7 @@ export default class StoreScene extends Phaser.Scene {
             let isUnlocked = this.gameState.unlockedDecor.background.includes(item.id);
             let itemName = this.add.text(0, yOffset, `${item.name}:`, {fontFamily: 'SuperComic', fontSize: '17px', color: this.colors.get('themeLight')})
                 .setName('itemName').setInteractive({useHandCursor: true});
-            itemName.on('pointerdown', () => {
+            itemName.on('pointerover', () => {
                 this.previewItem(item.id);
             });
                 container.add(itemName);
@@ -105,7 +107,7 @@ export default class StoreScene extends Phaser.Scene {
             let isUnlocked = this.gameState.unlockedDecor.windowL.includes(item.id);
             let itemName = this.add.text(0, yOffset, `${item.name}:`, {fontFamily: 'SuperComic', fontSize: '17px', color: this.colors.get('themeLight')})
                 .setName('itemName').setInteractive({useHandCursor: true});
-            itemName.on('pointerdown', () => {
+            itemName.on('pointerover', () => {
                 this.previewItem(item.id);
             });
             container.add(itemName);
@@ -151,7 +153,7 @@ export default class StoreScene extends Phaser.Scene {
             let isUnlocked = this.gameState.unlockedDecor.windowR.includes(item.id);
             let itemName = this.add.text(0, yOffset, `${item.name}:`, {fontFamily: 'SuperComic', fontSize: '17px', color: this.colors.get('themeLight')})
                 .setName('itemName').setInteractive({useHandCursor: true});
-            itemName.on('pointerdown', () => {
+            itemName.on('pointerover', () => {
                 this.previewItem(item.id);
             });
             container.add(itemName);
@@ -197,7 +199,7 @@ export default class StoreScene extends Phaser.Scene {
             let isUnlocked = this.gameState.unlockedDecor.picture.includes(item.id);
             let itemName = this.add.text(0, yOffset, `${item.name}:`, {fontFamily: 'SuperComic', fontSize: '17px', color: this.colors.get('themeLight')})
                 .setName('itemName').setInteractive({useHandCursor: true});
-            itemName.on('pointerdown', () => {
+            itemName.on('pointerover', () => {
                 this.previewItem(item.id);
             });
             container.add(itemName);
@@ -243,7 +245,7 @@ export default class StoreScene extends Phaser.Scene {
             let isUnlocked = this.gameState.unlockedDecor.plant.includes(item.id);
             let itemName = this.add.text(0, yOffset, `${item.name}:`, {fontFamily: 'SuperComic', fontSize: '17px', color: this.colors.get('themeLight')})
                 .setName('itemName').setInteractive({useHandCursor: true});
-            itemName.on('pointerdown', () => {
+            itemName.on('pointerover', () => {
                 this.previewItem(item.id);
             });
             container.add(itemName);
@@ -289,7 +291,7 @@ export default class StoreScene extends Phaser.Scene {
             let isUnlocked = this.gameState.unlockedDecor.bed.includes(item.id);
             let itemName = this.add.text(0, yOffset, `${item.name}:`, {fontFamily: 'SuperComic', fontSize: '17px', color: this.colors.get('themeLight')})
                 .setName('itemName').setInteractive({useHandCursor: true});
-            itemName.on('pointerdown', () => {
+            itemName.on('pointerover', () => {
                 this.previewItem(item.id);
             });
             container.add(itemName);
@@ -335,7 +337,7 @@ export default class StoreScene extends Phaser.Scene {
             let isUnlocked = this.gameState.unlockedDecor.platform.includes(item.id);
             let itemName = this.add.text(0, yOffset, `${item.name}:`, {fontFamily: 'SuperComic', fontSize: '17px', color: this.colors.get('themeLight')})
                 .setName('itemName').setInteractive({useHandCursor: true});
-            itemName.on('pointerdown', () => {
+            itemName.on('pointerover', () => {
                 this.previewItem(item.id);
             });
             container.add(itemName);
@@ -381,7 +383,7 @@ export default class StoreScene extends Phaser.Scene {
             let isUnlocked = this.gameState.unlockedDecor.shelf.includes(item.id);
             let itemName = this.add.text(0, yOffset, `${item.name}:`, {fontFamily: 'SuperComic', fontSize: '17px', color: this.colors.get('themeLight')})
                 .setName('itemName').setInteractive({useHandCursor: true});
-            itemName.on('pointerdown', () => {
+            itemName.on('pointerover', () => {
                 this.previewItem(item.id);
             });
             container.add(itemName);
@@ -427,7 +429,7 @@ export default class StoreScene extends Phaser.Scene {
             let isUnlocked = this.gameState.unlockedDecor.tree.includes(item.id);
             let itemName = this.add.text(0, yOffset, `${item.name}:`, {fontFamily: 'SuperComic', fontSize: '17px', color: this.colors.get('themeLight')})
                 .setName('itemName').setInteractive({useHandCursor: true});
-            itemName.on('pointerdown', () => {
+            itemName.on('pointerover', () => {
                 this.previewItem(item.id);
             });
             container.add(itemName);
@@ -629,16 +631,17 @@ export default class StoreScene extends Phaser.Scene {
     }
 
     previewItem(itemId) {
-        let bg = null;
-        let img = null;
-        bg = this.add.rectangle(this.game.config.width-200, this.game.config.height-150, 200, 200, this.colors.getHex('themeTertiary', 0.99))
-        img = this.add.image(this.game.config.width-200, this.game.config.height-150, itemId).setScale(1);
-
-        this.time.delayedCall(900, () => {
-            console.log('remove preview')
-            bg.destroy()
-            img.destroy()
-            // this.input.enabled = true;
-        });
+        this.previewImage.setTexture(itemId);
+        // let bg = null;
+        // let img = null;
+        // bg = this.add.rectangle(this.game.config.width-200, this.game.config.height-150, 200, 200, this.colors.getHex('themeTertiary', 0.99))
+        // img = this.add.image(this.game.config.width-200, this.game.config.height-150, itemId).setScale(1);
+        //
+        // this.time.delayedCall(900, () => {
+        //     console.log('remove preview')
+        //     bg.destroy()
+        //     img.destroy()
+        //     // this.input.enabled = true;
+        // });
     }
 }

@@ -31,6 +31,7 @@ export default class BootScene extends Phaser.Scene {
         });
 
         this.load.image('coin', 'assets/ui/coin.png');
+        this.load.image('decor-holder', 'assets/room-decor/bed/bed0.png');
 
         this.load.spritesheet('cat-tiles-master', 'assets/AllCatsBlack.png', { frameWidth: 64, frameHeight: 64 });
 

@@ -5,9 +5,11 @@ import {
     AP_COSTS,
     DECAY_RATES,
     COLOR_THRESHOLDS,
-    PLAYER_CONFIG
+    PLAYER_CONFIG,
+    DAILY_AWARDS
 } from "../lib/default-properties"
 import ColorScheme from "../lib/ColorScheme";
+import MainNavigation from "../objects/main-navigation";
 
 export default class MainScene extends Phaser.Scene {
 
@@ -19,33 +21,14 @@ export default class MainScene extends Phaser.Scene {
 
     create() {
 
-        // ====== NAVIGATION
-        this.navAnchor = this.add.text(530, 50, '');
-        this.navItemStyle = {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get('themeLight')};
-        this.add.text(this.navAnchor.x, this.navAnchor.y+this.navAnchor.height, 'Shop', this.navItemStyle).setInteractive({useHandCursor: true})
-            .on('pointerdown', () => {
-                this.storage.save(this.gameState);
-                this.scene.start('StoreScene')
-            })
-        this.add.text(this.navAnchor.x+50, this.navAnchor.y+this.navAnchor.height+25, 'Achievements', this.navItemStyle).setInteractive({useHandCursor: true})
-            .on('pointerdown', () => {
-                this.storage.save(this.gameState);
-                this.scene.start('AchievementsScene')
-            })
-        this.add.text(this.navAnchor.x+100, this.navAnchor.y+this.navAnchor.height+50, 'Settings', this.navItemStyle).setInteractive({useHandCursor: true})
-            .on('pointerdown', () => {
-                this.storage.save(this.gameState);
-                this.scene.start('SettingsScene')
-            })
-        // ======== NAVIGATION END
-
-
         // Load game state either from localStorage or from Defaults
         this.gameState = this.storage.load('gameState') || {
             stats: {...DEFAULT_STATS},
-            AP: 40,
-            coins: 500,
+            AP: 10,
+            coins: 100,
             lastSave: Date.now(),
+            lastLogin: null,
+            loginStreak: 0,
             unlockedDecor: {
                 bed: [],
                 picture: [],
@@ -69,6 +52,15 @@ export default class MainScene extends Phaser.Scene {
                 tree: ""
             }
         };
+
+        // Check daily rewards (AP reset and cash bonus).
+        this.checkDailyRewards();
+
+        // ====== NAVIGATION
+        this.mainNav = new MainNavigation(this, this.gameState);
+        this.mainNav.createNavigation();
+        // ======== NAVIGATION END
+
         // Track stat bars + AP text
         this.statBars = {};
         this.drawUI();
@@ -76,14 +68,11 @@ export default class MainScene extends Phaser.Scene {
         // Start stat decay timer
         this.lastTick = Date.now();
 
-
-        // ======= DECOR
-        // const decorState = this.storage.load('decorState') || {};
-        // this.decorSelection = decorState.selectedDecor || {};
+        // ======= STATIC DECOR
         this.renderDecor();
 
         // ====== CAT SPRITE
-        this.catCharacter = this.add.sprite(PLAYER_CONFIG.defaultX, PLAYER_CONFIG.defaultY, 'cat-tiles-master').setScale(1.1);
+        this.catCharacter = this.add.sprite(PLAYER_CONFIG.defaultX, PLAYER_CONFIG.defaultY, 'cat-tiles-master').setScale(1.1).setDepth(9999);
         this.catCharacter.play('idle');
 
         // ===== INTERACTION UI
@@ -93,7 +82,7 @@ export default class MainScene extends Phaser.Scene {
         window.addEventListener('beforeunload', () => {
             this.storage.save(this.gameState);
         });
-        this.storage.save(this.gameState)
+        this.storage.save(this.gameState);
     }
 
 
@@ -121,24 +110,50 @@ export default class MainScene extends Phaser.Scene {
         this.apText = this.add.text(barX, barYStart + 200, `AP: ${this.gameState.AP}`, {
             fontSize: '16px',
             color: '#ffffff'
+        }).setInteractive({useHandCursor: true})
+        .on('pointerdown', () => {
+            this.showDailyRewardDetails(); // When the AP text is clicked, display current daily rewards.
         });
-
         this.coinText = this.add.text(barX, barYStart + 230, `Coins: ${this.gameState.coins}`, {
             fontSize: '16px',
             color: '#ffff00'
+        }).setInteractive({useHandCursor: true})
+        .on('pointerdown', () => {
+            this.showDailyRewardDetails(); // When the AP text is clicked, display current daily rewards.
         });
+    }
+
+    // Helper function to update coins display (when coins change)
+    updateCoinsDisplay() {
+        if (this.coinText) {
+            this.coinText.setText(`Coins: ${this.gameState.coins}`);
+        }
+    }
+
+    // Display a temporary popup with details of today's rewards.
+    showDailyRewardDetails() {
+        const detailText = `Daily Rewards: \nAction Points: ${DAILY_AWARDS.dailyActionPoints} (unused AP are lost) \nDaily Cash Bonus: ${DAILY_AWARDS.cashBase + ((this.gameState.loginStreak - 1) * DAILY_AWARDS.cashIncrement)} coins \nLogin Streak: ${this.gameState.loginStreak} day(s)`;
+
+        const popup = this.add.text(400, 100, detailText, {
+            fontSize: '18px',
+            color: '#00ff00',
+            backgroundColor: '#000000',
+            align: 'center'
+        }).setOrigin(0.5).setDepth(1000);
+
+        this.time.delayedCall(4000, () => popup.destroy());
     }
 
     renderDecor() {
         const decorMapping = {
-            background: { x: this.game.config.width/2, y: this.game.config.height/2 },
-            bed: { x: 500, y: 400 },
-            windowL: { x: 400, y: 200 },
-            windowR: { x: 550, y: 200 },
-            plant: { x: 440, y: 230 },
-            platform: { x: 495, y: 210 },
-            shelf: { x: 380, y: 310 },
-            picture: { x: 400, y: 250 }
+            background: { x: this.game.config.width/2, y: this.game.config.height/2, depth: 999 },
+            bed: { x: 500, y: 400, depth: 1000 },
+            windowL: { x: 400, y: 200, depth: 1000 },
+            windowR: { x: 550, y: 200, depth: 1000 },
+            plant: { x: 440, y: 230, depth: 1000 },
+            platform: { x: 495, y: 210, depth: 1000 },
+            shelf: { x: 380, y: 310, depth: 1000 },
+            picture: { x: 400, y: 250, depth: 1000 }
         };
 
         Object.entries(this.gameState.selectedDecor).forEach(([decorType, spriteKey]) => {
@@ -146,7 +161,7 @@ export default class MainScene extends Phaser.Scene {
             if (!pos) return;
             if (!spriteKey) return;
 
-            this.add.image(pos.x, pos.y, spriteKey);
+            this.add.image(pos.x, pos.y, spriteKey).setDepth(pos.depth);
         });
     }
 
@@ -182,22 +197,22 @@ export default class MainScene extends Phaser.Scene {
     createInteractionButtons() {
 
         // ==== food
-        this.foodIcon = this.add.image(405, 420, 'bowl-empty').setInteractive({useHandCursor: true})
+        this.foodIcon = this.add.image(405, 420, 'bowl-empty').setInteractive({useHandCursor: true}).setDepth(9999)
             .on('pointerdown', () => {
                 this.handleAction('fillFood');
             })
         // ==== water
-        this.waterIcon = this.add.image(450, 445, 'bowl-empty').setInteractive({useHandCursor: true})
+        this.waterIcon = this.add.image(450, 445, 'bowl-empty').setInteractive({useHandCursor: true}).setDepth(9999)
             .on('pointerdown', () => {
                 this.handleAction('fillWater');
             })
         // ==== tray
-        this.trayIcon = this.add.image(290, 365, 'litter-tray-clean').setInteractive({useHandCursor: true})
+        this.trayIcon = this.add.image(290, 365, 'litter-tray-clean').setInteractive({useHandCursor: true}).setDepth(9999)
             .on('pointerdown', () => {
                 this.handleAction('cleanTray');
             })
         // ==== play
-        this.playIcon = this.add.image(530, 400, 'cat-toy-sprite').setInteractive({useHandCursor: true})
+        this.playIcon = this.add.image(530, 400, 'cat-toy-sprite').setInteractive({useHandCursor: true}).setDepth(9999)
             .on('pointerdown', () => {
                 this.handleAction('play');
             })
@@ -250,9 +265,13 @@ export default class MainScene extends Phaser.Scene {
 
         // Update UI
         this.updateProgressBar(statKey, this.gameState.stats[statKey]);
+        // save
+        this.storage.save(this.gameState);
     }
 
     animateCat(action) {
+        if (action === 'cleanTray') return; // do not animate cat to the tray
+
         // ==== location of interactive UI elements
         const targetMap = {
             fillFood: {x: this.foodIcon.x, y: this.foodIcon.y},
@@ -312,6 +331,61 @@ export default class MainScene extends Phaser.Scene {
             const avg = (this.gameState.stats.food + this.gameState.stats.water + this.gameState.stats.tray) / 3;
             this.gameState.stats.happiness = avg;
             this.updateProgressBar('happiness', avg);
+        }
+    }
+
+    checkDailyRewards() {
+        const today = new Date().toISOString().slice(0, 10); // Format: YYYY-MM-DD
+        let lastLogin = this.gameState.lastLogin;
+        let loginStreak = this.gameState.loginStreak || 0;
+
+        // Only process if this is a new day.
+        if (lastLogin === today) {
+            // Already logged in today; no need to change AP or award daily cash.
+            return;
+        } else {
+            // Determine if the login is consecutive.
+            if (!lastLogin) {
+                // First login; start a new streak.
+                loginStreak = 1;
+            } else {
+                // Compare dates to see if login is consecutive.
+                const oneDay = 24 * 60 * 60 * 1000;
+                const lastLoginDate = new Date(lastLogin);
+                const currentDate = new Date(today);
+                const diffDays = Math.round(Math.abs((currentDate - lastLoginDate) / oneDay));
+                if (diffDays === 1) {
+                    // Consecutive login – increase streak.
+                    loginStreak++;
+                } else {
+                    // Not consecutive – reset streak.
+                    loginStreak = 1;
+                }
+            }
+
+            // Award a fixed amount of AP; discard previous AP.
+            this.gameState.AP = DAILY_AWARDS.dailyActionPoints;
+
+            // Award cash bonus based on the login streak.
+            // For example: cash = base cash + ((streak - 1) * daily increment)
+            const dailyCash = DAILY_AWARDS.cashBase + ((loginStreak - 1) * DAILY_AWARDS.cashIncrement);
+            this.gameState.coins += dailyCash;
+
+            // Update login data in the game state.
+            this.gameState.lastLogin = today;
+            this.gameState.loginStreak = loginStreak;
+
+            // Update the UI to show the new AP and coin totals.
+            this.updateAPDisplay();
+            this.updateCoinsDisplay();
+
+            // Save the updated game state.
+            this.storage.save('gameState', this.gameState);
+        }
+    }
+    updateAPDisplay() {
+        if(this.apText){
+            this.apText.setText(`AP: ${this.gameState.AP}`);
         }
     }
 

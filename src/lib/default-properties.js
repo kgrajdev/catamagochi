@@ -88,8 +88,8 @@ export const AP_COSTS = {
 
 // Constants for decay rates and thresholds (example values)
 export const DECAY_RATES = {
-    food: 0.1,    // per second or tick
-    water: 0.1,
+    food: 0.05,    // per second or tick
+    water: 0.05,
     tray: 0.05
 };
 
@@ -100,3 +100,9 @@ export const COLOR_THRESHOLDS = {
     red: { min: 20, max: 39 },
     black: { min: 0,  max: 19 }
 };
+
+export const DAILY_AWARDS = {
+    dailyActionPoints: 10, // Constant daily Action Points award
+    cashBase: 50, // Base cash reward
+    cashIncrement: 5 // Increment per day of consecutive login
+}
