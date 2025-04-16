@@ -1,4 +1,9 @@
-
+@font-face {
+    font-family: 'SuperComic';
+    src: url('assets/font/SuperComic.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
 body {
     margin: 0;
     padding: 0;
