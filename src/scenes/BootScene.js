@@ -5,7 +5,6 @@ import {
     MAX_STATS,
     AP_COSTS,
     DECAY_RATES,
-    COLOR_THRESHOLDS,
     PLAYER_CONFIG,
     DECOR_CATALOG
 } from "../lib/default-properties";
@@ -35,17 +34,16 @@ export default class BootScene extends Phaser.Scene {
 
         this.load.spritesheet('cat-tiles-master', 'assets/AllCatsBlack.png', { frameWidth: 64, frameHeight: 64 });
 
-        this.load.spritesheet('cat-toy-sprite', 'assets/CatToy.png', { frameWidth: 32, frameHeight: 32 });
-
         this.load.image('cat-medicine', 'assets/cat-medicine.png');
 
+        this.load.spritesheet('cat-toy-sprite', 'assets/CatToy.png', { frameWidth: 32, frameHeight: 32 });
         this.load.image('litter-tray-clean', 'assets/CatLitterTray.png');
         this.load.image('litter-tray-dirty', 'assets/CatLitterTrayDirty.png');
-
         this.load.image('bowl-food-full', 'assets/bowl-food-full.png');
         this.load.image('bowl-water-full', 'assets/bowl-water-full.png');
         this.load.image('bowl-empty', 'assets/bowl-empty.png');
 
+        this.load.audio('bgMusic', 'assets/music/Retro-Beat.ogg');
     }
 
     create(){

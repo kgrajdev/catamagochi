@@ -82,23 +82,15 @@ export const MAX_STATS = {
 export const AP_COSTS = {
     fillFood: 3,
     fillWater: 3,
-    cleanTray: 2,
-    play: 4
+    cleanTray: 1,
+    play: 3
 };
 
 // Constants for decay rates and thresholds (example values)
 export const DECAY_RATES = {
-    food: 0.05,    // per second or tick
-    water: 0.05,
-    tray: 0.05
-};
-
-export const COLOR_THRESHOLDS = {
-    green: { min: 80, max: 100 },
-    yellow: { min: 60, max: 79 },
-    orange: { min: 40, max: 59 },
-    red: { min: 20, max: 39 },
-    black: { min: 0,  max: 19 }
+    food: 0.02,    // per second or tick
+    water: 0.02,
+    tray: 0.01
 };
 
 export const DAILY_AWARDS = {
@@ -106,3 +98,9 @@ export const DAILY_AWARDS = {
     cashBase: 50, // Base cash reward
     cashIncrement: 5 // Increment per day of consecutive login
 }
+export const RANDOM_IDLE_BEHAVIORS = [
+    { key: 'sleeping', duration: 10000 },   // static animation behavior, lasts 10 seconds
+    { key: 'dance', duration: 3000 },
+    { key: 'chill', duration: 5000 },
+    { key: 'walk', duration: 3000 }          // special behavior that involves moving across the scene
+];

@@ -4,9 +4,9 @@ import {
     MAX_STATS,
     AP_COSTS,
     DECAY_RATES,
-    COLOR_THRESHOLDS,
     PLAYER_CONFIG,
-    DAILY_AWARDS
+    DAILY_AWARDS,
+    RANDOM_IDLE_BEHAVIORS
 } from "../lib/default-properties"
 import ColorScheme from "../lib/ColorScheme";
 import MainNavigation from "../objects/main-navigation";
@@ -17,7 +17,9 @@ export default class MainScene extends Phaser.Scene {
         super({ key: 'MainScene' });
         this.storage = new Storage();
         this.colors = new ColorScheme();
+        this.actionButtons = this.actionButtons || {};
     }
+
 
     create() {
 
@@ -25,10 +27,15 @@ export default class MainScene extends Phaser.Scene {
         this.gameState = this.storage.load('gameState') || {
             stats: {...DEFAULT_STATS},
             AP: 10,
-            coins: 100,
+            coins: 5100,
+            catName: null,
             lastSave: Date.now(),
             lastLogin: null,
             loginStreak: 0,
+            gameSettings: {
+                bgMusicVolume: 0.5,
+                isBgMusicOn: true
+            },
             unlockedDecor: {
                 bed: [],
                 picture: [],
@@ -53,6 +60,10 @@ export default class MainScene extends Phaser.Scene {
             }
         };
 
+        if (!this.gameState.catName) {
+            this.showCatNamePrompt()
+        }
+
         // Check daily rewards (AP reset and cash bonus).
         this.checkDailyRewards();
 
@@ -72,17 +83,64 @@ export default class MainScene extends Phaser.Scene {
         this.renderDecor();
 
         // ====== CAT SPRITE
-        this.catCharacter = this.add.sprite(PLAYER_CONFIG.defaultX, PLAYER_CONFIG.defaultY, 'cat-tiles-master').setScale(1.1).setDepth(9999);
-        this.catCharacter.play('idle');
+        this.catCharacter = this.add.sprite(PLAYER_CONFIG.defaultX, PLAYER_CONFIG.defaultY, 'cat-tiles-master').setScale(1.1).setDepth(1001);
+        // Choose one of the random idle behaviors
+        let behavior = Phaser.Utils.Array.GetRandom(RANDOM_IDLE_BEHAVIORS);
+        if (behavior.key === 'sleeping') {
+            this.catCharacter.play('sleeping');
+        } else if (behavior.key === 'chill') {
+            this.catCharacter.play('chill');
+        } else {
+            this.catCharacter.play('idle');
+        }
 
         // ===== INTERACTION UI
-        this.createInteractionButtons()
+        // Create action buttons for food, water, tray, and play.
+        // Adjust x, y values as needed.
+        this.createActionButton('fillFood', 405, 420);
+        this.createActionButton('fillWater', 450, 445);
+        this.createActionButton('cleanTray', 290, 365);
+        this.createActionButton('play', 530, 400);
 
         // Save on page exit
         window.addEventListener('beforeunload', () => {
             this.storage.save(this.gameState);
         });
         this.storage.save(this.gameState);
+
+        // Start the random idle process.
+        // Build a Phaser polygon once:
+        // Four‐corner walk area
+        this.walkAreaPoints = [
+            { x: 480, y: 220 },   // top‑left
+            { x: 680, y: 330 },   // top‑right
+            { x: 540, y: 440 },   // bottom‑right
+            { x: 330, y: 330 }    // bottom‑left
+        ];
+        // Build the polygon from those points
+        this.walkPolygon = new Phaser.Geom.Polygon(
+            this.walkAreaPoints.flatMap(p => [ p.x, p.y ])
+        );
+
+        // this.walkPolygon = new Phaser.Geom.Polygon([
+        //     480,220,
+        //     680,330,
+        //     540,440,
+        //     330,330
+        // ]);
+        this.scheduleRandomIdle();
+
+        // ======== INITIALISE BACKGROUND MUSIC
+        if (!this.sound.get('bgMusic')) {
+            this.bgMusic = this.sound.add('bgMusic', {
+                loop: true,
+                volume: this.gameState.gameSettings.bgMusicVolume
+            });
+            if (this.gameState.gameSettings.isBgMusicOn) {
+                this.bgMusic.play();
+            }
+            this.registry.set('bgMusic', this.bgMusic); // store in registry for access from other scenes
+        }
     }
 
 
@@ -194,29 +252,47 @@ export default class MainScene extends Phaser.Scene {
         return 'themeProgressBarBlack';
     }
 
-    createInteractionButtons() {
 
-        // ==== food
-        this.foodIcon = this.add.image(405, 420, 'bowl-empty').setInteractive({useHandCursor: true}).setDepth(9999)
-            .on('pointerdown', () => {
-                this.handleAction('fillFood');
-            })
-        // ==== water
-        this.waterIcon = this.add.image(450, 445, 'bowl-empty').setInteractive({useHandCursor: true}).setDepth(9999)
-            .on('pointerdown', () => {
-                this.handleAction('fillWater');
-            })
-        // ==== tray
-        this.trayIcon = this.add.image(290, 365, 'litter-tray-clean').setInteractive({useHandCursor: true}).setDepth(9999)
-            .on('pointerdown', () => {
-                this.handleAction('cleanTray');
-            })
-        // ==== play
-        this.playIcon = this.add.image(530, 400, 'cat-toy-sprite').setInteractive({useHandCursor: true}).setDepth(9999)
-            .on('pointerdown', () => {
-                this.handleAction('play');
-            })
+    /**
+     * Creates an interactive action button.
+     * @param {string} action - The action identifier (e.g., "fillFood", "fillWater", "cleanTray", "play").
+     * @param {number} x - X coordinate for the button.
+     * @param {number} y - Y coordinate for the button.
+     */
+    createActionButton(action, x, y) {
+        let textureKey;
+        switch (action) {
+            case 'fillFood':
+                textureKey = (this.gameState.stats.food >= MAX_STATS.food) ? 'bowl-food-full' : 'bowl-empty';
+                break;
+            case 'fillWater':
+                textureKey = (this.gameState.stats.water >= MAX_STATS.water) ? 'bowl-water-full' : 'bowl-empty';
+                break;
+            case 'cleanTray':
+                textureKey = (this.gameState.stats.tray >= MAX_STATS.tray) ? 'litter-tray-clean' : 'litter-tray-dirty';
+                break;
+            case 'play':
+                // For play, you might use a specific sprite from a spritesheet:
+                textureKey = 'cat-toy-sprite';
+                break;
+            default:
+                textureKey = 'default'; // Fallback texture if needed.
+        }
 
+        const button = this.add.image(x, y, textureKey).setInteractive({useHandCursor: true}).setDepth(9999);
+        // Add hover effect (e.g., slight scale up)
+        button.on('pointerover', () => button.setScale(1.05));
+        button.on('pointerout', () => button.setScale(1));
+
+        // Bind the pointerdown event to execute the action:
+        button.on('pointerdown', () => {
+            this.handleAction(action);
+        });
+
+        // Store the button reference for later texture updates
+        this.actionButtons[action] = button;
+
+        return button;
     }
 
     handleAction(action) {
@@ -224,6 +300,10 @@ export default class MainScene extends Phaser.Scene {
         if (this.gameState.AP < cost) {
             console.log('not enough AP')
             return;
+        }
+        // Cancel any idle timers because the cat is now busy
+        if (this.idleTimer) {
+            this.idleTimer.remove(false);
         }
 
         const statKeyMap = {
@@ -261,7 +341,17 @@ export default class MainScene extends Phaser.Scene {
         }
 
         // Animate cat
-        this.animateCat(action);
+        // For the action animation: move the cat to the target, do the action, then return the cat.
+        // After completing the action, ensure the cat goes back to idle:
+        this.animateCat(action, () => {
+            // Callback after the action animation is finished.
+            this.catCharacter.play('idle');
+            // Schedule the next random idle behavior.
+            this.scheduleRandomIdle();
+        });
+
+        // Update the UI action button textures based on the new game state.
+        this.updateActionButtonTextures();
 
         // Update UI
         this.updateProgressBar(statKey, this.gameState.stats[statKey]);
@@ -269,14 +359,43 @@ export default class MainScene extends Phaser.Scene {
         this.storage.save(this.gameState);
     }
 
+    updateActionButtonTextures() {
+        if (this.actionButtons) {
+            // Food button:
+            const foodFull = this.gameState.stats.food >= MAX_STATS.food;
+            const foodTexture = foodFull ? 'bowl-food-full' : 'bowl-empty';
+            this.actionButtons['fillFood'].setTexture(foodTexture);
+            this.actionButtons['fillFood'].setDepth(9999);
+            this.actionButtons['fillFood'].setAlpha(foodFull ? 0.6 : 1); // gray out if full
+
+            // Water button:
+            const waterFull = this.gameState.stats.water >= MAX_STATS.water;
+            const waterTexture = waterFull ? 'bowl-water-full' : 'bowl-empty';
+            this.actionButtons['fillWater'].setTexture(waterTexture);
+            this.actionButtons['fillWater'].setDepth(9999);
+            this.actionButtons['fillWater'].setAlpha(waterFull ? 0.6 : 1);
+
+            // Litter tray:
+            const trayClean = this.gameState.stats.tray >= MAX_STATS.tray;
+            const trayTexture = trayClean ? 'litter-tray-clean' : 'litter-tray-dirty';
+            this.actionButtons['cleanTray'].setTexture(trayTexture);
+            this.actionButtons['cleanTray'].setDepth(9999);
+            this.actionButtons['cleanTray'].setAlpha(trayClean ? 0.6 : 1);
+
+            // For 'play', you might always show the same sprite, or update it if you want to change states.
+        }
+    }
+
+
+
     animateCat(action) {
         if (action === 'cleanTray') return; // do not animate cat to the tray
 
         // ==== location of interactive UI elements
         const targetMap = {
-            fillFood: {x: this.foodIcon.x, y: this.foodIcon.y},
-            fillWater: {x: this.waterIcon.x, y: this.waterIcon.y},
-            play: {x: this.playIcon.x, y: this.playIcon.y}
+            fillFood: {x: this.actionButtons['fillFood'].x, y: this.actionButtons['fillFood'].y},
+            fillWater: {x: this.actionButtons['fillWater'].x, y: this.actionButtons['fillWater'].y},
+            // play: {x: this.playIcon.x, y: this.playIcon.y}
         };
 
         const target = targetMap[action];
@@ -387,6 +506,104 @@ export default class MainScene extends Phaser.Scene {
         if(this.apText){
             this.apText.setText(`AP: ${this.gameState.AP}`);
         }
+    }
+    scheduleRandomIdle() {
+        // Clear any previous idle timer if necessary.
+        if (this.idleTimer) {
+            this.idleTimer.remove(false);
+        }
+
+        // Set a random delay between idle behaviors (e.g., 5 to 10 seconds)
+        const delay = Phaser.Math.Between(1000, 5000);
+        this.idleTimer = this.time.delayedCall(delay, () => {
+            this.triggerRandomIdleBehavior();
+        });
+    }
+    triggerRandomIdleBehavior() {
+        // If the cat is busy with another action (like an ongoing tween), you might want to check that here.
+        if (!this.catCharacter) return;
+
+        // Choose one of the random idle behaviors
+        let behavior = Phaser.Utils.Array.GetRandom(RANDOM_IDLE_BEHAVIORS);
+
+        if (behavior.key === 'walk') {
+            // Special case: behavior that includes movement
+            this.performWalkBehavior(behavior.duration);
+        } else {
+            // For simple behaviors that only change the animation
+            this.catCharacter.play(behavior.key);
+            // After the specified duration, go back to idle
+            this.time.delayedCall(behavior.duration, () => {
+                this.catCharacter.play('idle');
+                this.scheduleRandomIdle(); // schedule next idle behavior
+            });
+        }
+    }
+    performWalkBehavior() {
+        // pick a valid random point
+        const dest = this.getRandomPointInPolygon();
+
+        // switch to your walk/run anim
+        this.catCharacter.play('running');
+
+        // calculate a duration so speed feels constant
+        const dx = dest.x - this.catCharacter.x;
+        const dy = dest.y - this.catCharacter.y;
+        const distance = Math.hypot(dx, dy);
+        const speed = 100; // px/sec
+        const duration = (distance / speed) * 1000;
+
+        // tween the cat over
+        this.tweens.add({
+            targets: this.catCharacter,
+            x: dest.x,
+            y: dest.y,
+            duration,
+            ease: 'Linear',
+            onComplete: () => {
+                // once arrived, play sleeping (or chill, etc.)
+                this.catCharacter.play('sleeping');
+                this.time.delayedCall(10000, () => {
+                    this.catCharacter.play('idle');
+                    this.scheduleRandomIdle();
+                });
+            }
+        });
+    }
+
+
+
+    /**
+     * @returns {{x:number,y:number}} a point inside this.walkPolygon
+     */
+    getRandomPointInPolygon() {
+        // 2a) Compute bounding box from the corner array
+        const pts = this.walkAreaPoints;
+        let minX = pts[0].x, maxX = pts[0].x,
+            minY = pts[0].y, maxY = pts[0].y;
+
+        pts.forEach(p => {
+            if (p.x < minX) minX = p.x;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.y > maxY) maxY = p.y;
+        });
+
+        // 2b) Rejection sample
+        let x, y;
+        do {
+            x = Phaser.Math.Between(minX, maxX);
+            y = Phaser.Math.Between(minY, maxY);
+        } while (!Phaser.Geom.Polygon.Contains(this.walkPolygon, x, y));
+
+        return { x, y };
+    }
+
+
+
+
+    showCatNamePrompt() {
+
     }
 
 }
