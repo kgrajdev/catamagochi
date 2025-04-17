@@ -26,7 +26,7 @@ export default class StoreScene extends Phaser.Scene {
         // ==== HEADING SECTION
         this.sceneHeading = this.add.text((this.game.config.width-this.game.config.width)+25, 25, 'Shop', {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get('themeLight')})
             .setOrigin(0, 0.5)
-        this.sceneSubHeading = this.add.text(this.sceneHeading.x, this.sceneHeading.y+this.sceneHeading.height, `Unlock decor for ${PLAYER_CONFIG.catName}`, {fontFamily: 'SuperComic', align: 'center', fontSize: '13px', color: this.colors.get('themeLight')})
+        this.sceneSubHeading = this.add.text(this.sceneHeading.x, this.sceneHeading.y+this.sceneHeading.height, `Unlock decor for ${this.gameState.catName ?? 'Meowlo'}`, {fontFamily: 'SuperComic', align: 'center', fontSize: '13px', color: this.colors.get('themeLight')})
             .setOrigin(0, 0.5)
 
         // ====== NAVIGATION
@@ -260,7 +260,7 @@ export default class StoreScene extends Phaser.Scene {
                     if (isUnlocked) {
                         this.selectDecor('plant', item.id);
                     } else {
-                        this.purchaseItem('picture', item);
+                        this.purchaseItem('plant', item);
                     }
                 });
                 container.add([itemCost, itemCostIcon, itemButton]);
@@ -620,8 +620,8 @@ export default class StoreScene extends Phaser.Scene {
         this.gameState.unlockedDecor[category].push(item.id);
 
         this.selectDecor(category, item.id);
-        this.storage.save(this.gameState);
-        this.scene.restart(); // refresh visuals
+        // this.storage.save(this.gameState);
+        // this.scene.restart(); // refresh visuals
     }
 
     selectDecor(category, itemId) {

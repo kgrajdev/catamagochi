@@ -14,4 +14,14 @@ https://www.dafont.com/super-comic-3.font?l[]=10&l[]=1
 
 <a href="https://www.flaticon.com/free-icons/unlock" title="unlock icons">Unlock icons created by Freepik - Flaticon</a>
 
+<a href="https://www.flaticon.com/free-icons/coin" title="coin icons">Coin icons created by kliwir art - Flaticon</a>
 
+Graphics:
+
+https://toffeecraft.itch.io/
+
+https://kenney.itch.io/
+
+Music:
+
+https://kenney.itch.io/
