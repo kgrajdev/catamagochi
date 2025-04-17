@@ -44,20 +44,36 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('bowl-empty', 'assets/bowl-empty.png');
 
         this.load.audio('bgMusic', 'assets/music/Retro-Beat.ogg');
+        this.load.image('bgImage', 'assets/game-bg.png');
     }
 
     create(){
-        this.catAnimations = new CatAnimations(this);
-        this.startButton = this.add.text(this.game.config.width/2, this.game.config.height/2, '', {fontFamily: 'SuperComic', align: 'center', fontSize: '35px', color: this.colors.get('themeLight')})
+        this.add.image(this.game.config.width/2, this.game.config.height/2, 'bgImage').setDepth(1);
+
+        this.add.text(this.game.config.width/2, this.game.config.height/2-100, 'Catamagochi', {fontFamily: 'SuperComic', align: 'center', fontSize: '35px', color: this.colors.get('themePrimary')})
+            .setOrigin(0.5)
+            .setDepth(1000)
+
+        this.startButton = this.add.text(this.game.config.width/2, this.game.config.height/2, '', {fontFamily: 'SuperComic', align: 'center', fontSize: '35px', color: this.colors.get('themePrimaryDark')})
             .setOrigin(0.5)
             .setInteractive({useHandCursor: true})
             .setDepth(1000)
             .on('pointerdown', () => {
                 this.scene.start('MainScene')
+            })
+            .on('pointerover', () => {
+                this.startButton.setStyle({
+                    color: this.colors.get('themePrimaryLight')
+                })
+            }).on('pointerout', () => {
+                this.startButton.setStyle({
+                    color: this.colors.get('themePrimaryDark')
+                })
             });
 
         // check for save data
         this.checkForSaveData(this.startButton);
+        this.catAnimations = new CatAnimations(this);
     }
 
     checkForSaveData(startButton) {

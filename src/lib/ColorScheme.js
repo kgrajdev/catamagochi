@@ -4,17 +4,17 @@ export default class ColorScheme {
             themeLight: '#ffffff',
             themeDark: '#222222',
 
-            themePrimary: '#f3cc65',
-            themePrimaryLight: '#fce8b5',
-            themePrimaryDark: '#c57c29',
+            themePrimary: '#6e5252',
+            themePrimaryLight: '#ac8484',
+            themePrimaryDark: '#493636',
 
-            themeSecondary: '#4494af',
-            themeSecondaryLight: '#7ec4df',
-            themeSecondaryDark: '#296d83',
+            themeSecondary: '#383c2c',
+            themeSecondaryLight: '#555c44',
+            themeSecondaryDark: '#25291e',
 
-            themeTertiary: '#4a4a4a',
-            themeTertiaryLight: '#5e5d5d',
-            themeTertiaryDark: '#3c3c3c',
+            themeTertiary: '#49657d',
+            themeTertiaryLight: '#5d7fa3',
+            themeTertiaryDark: '#385060',
 
             themeError: '#910000',
             themeSuccess: '#009718',

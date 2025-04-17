@@ -22,6 +22,7 @@ export default class MainScene extends Phaser.Scene {
 
 
     create() {
+        this.add.image(this.game.config.width/2, this.game.config.height/2, 'bgImage').setDepth(1)
 
         // Load game state either from localStorage or from Defaults
         this.gameState = this.storage.load('gameState') || {
@@ -108,8 +109,6 @@ export default class MainScene extends Phaser.Scene {
         });
         this.storage.save(this.gameState);
 
-        // Start the random idle process.
-        // Build a Phaser polygon once:
         // Four‐corner walk area
         this.walkAreaPoints = [
             { x: 480, y: 220 },   // top‑left
@@ -121,13 +120,7 @@ export default class MainScene extends Phaser.Scene {
         this.walkPolygon = new Phaser.Geom.Polygon(
             this.walkAreaPoints.flatMap(p => [ p.x, p.y ])
         );
-
-        // this.walkPolygon = new Phaser.Geom.Polygon([
-        //     480,220,
-        //     680,330,
-        //     540,440,
-        //     330,330
-        // ]);
+        // ====== INITIALISE RANDOM ANIMATIONS
         this.scheduleRandomIdle();
 
         // ======== INITIALISE BACKGROUND MUSIC
@@ -157,9 +150,9 @@ export default class MainScene extends Phaser.Scene {
             const label = this.add.text(barX, barY - 18, key.toUpperCase(), {
                 fontSize: '14px',
                 color: '#ffffff'
-            });
+            }).setDepth(2);
 
-            const bar = this.add.graphics();
+            const bar = this.add.graphics().setDepth(2);
             this.statBars[key] = bar;
 
             this.updateProgressBar(key, value);
@@ -168,14 +161,14 @@ export default class MainScene extends Phaser.Scene {
         this.apText = this.add.text(barX, barYStart + 200, `AP: ${this.gameState.AP}`, {
             fontSize: '16px',
             color: '#ffffff'
-        }).setInteractive({useHandCursor: true})
+        }).setDepth(2).setInteractive({useHandCursor: true})
         .on('pointerdown', () => {
             this.showDailyRewardDetails(); // When the AP text is clicked, display current daily rewards.
         });
         this.coinText = this.add.text(barX, barYStart + 230, `Coins: ${this.gameState.coins}`, {
             fontSize: '16px',
             color: '#ffff00'
-        }).setInteractive({useHandCursor: true})
+        }).setDepth(2).setInteractive({useHandCursor: true})
         .on('pointerdown', () => {
             this.showDailyRewardDetails(); // When the AP text is clicked, display current daily rewards.
         });
@@ -205,12 +198,12 @@ export default class MainScene extends Phaser.Scene {
     renderDecor() {
         const decorMapping = {
             background: { x: this.game.config.width/2, y: this.game.config.height/2, depth: 999 },
-            bed: { x: 500, y: 400, depth: 1000 },
+            bed: { x: 600, y: 325, depth: 1000 },
             windowL: { x: 400, y: 200, depth: 1000 },
             windowR: { x: 550, y: 200, depth: 1000 },
-            plant: { x: 440, y: 230, depth: 1000 },
+            plant: { x: 570, y: 230, depth: 1000 },
             platform: { x: 495, y: 210, depth: 1000 },
-            shelf: { x: 380, y: 310, depth: 1000 },
+            shelf: { x: 345, y: 295, depth: 1000 },
             picture: { x: 400, y: 250, depth: 1000 }
         };
 
@@ -603,7 +596,7 @@ export default class MainScene extends Phaser.Scene {
 
 
     showCatNamePrompt() {
-
+        console.log('show intro name option')
     }
 
 }
