@@ -17,7 +17,11 @@ export default class ColorScheme {
             themeTertiaryDark: '#385060',
 
             themeError: '#910000',
+            themeErrorDark: '#7e0000',
+            themeErrorLight: '#b10000',
             themeSuccess: '#009718',
+            themeSuccessDark: '#007a17',
+            themeSuccessLight: '#00b11c',
 
             themeProgressBarGreen: '#63bf00',
             themeProgressBarYellow: '#bfaf00',

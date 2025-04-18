@@ -5,6 +5,7 @@ import GameOverScene from "./scenes/GameOverScene";
 import StoreScene from "./scenes/StoreScene";
 import AchievementsScene from "./scenes/AchievementsScene";
 import SettingsScene from "./scenes/SettingsScene";
+import AboutScene from "./scenes/AboutScene";
 
 let config = {
     type: Phaser.AUTO,
@@ -15,7 +16,7 @@ let config = {
         createContainer: true
     },
     parent: "game-container",
-    scene: [BootScene, MainScene, GameOverScene, StoreScene, AchievementsScene, SettingsScene],
+    scene: [BootScene, MainScene, GameOverScene, StoreScene, AchievementsScene, SettingsScene, AboutScene],
     pixelArt: true
 };
 

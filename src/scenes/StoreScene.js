@@ -52,7 +52,8 @@ export default class StoreScene extends Phaser.Scene {
         this.coinsValue = this.add.text(this.coinsLabel.x+this.coinsLabel.width+5, this.coinsLabel.y, this.gameState.coins, {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get('themePrimaryDark')}).setDepth(2)
 
         // ==== PREVIEW HOLDER
-        this.previewImage = this.add.image(this.game.config.width-200, this.game.config.height-130, 'decor-holder').setDepth(2)
+        this.previewImageInfo = this.add.text(this.game.config.width-200, this.game.config.height-130, 'hover over any of the item names\nto see their preview', {fontFamily: 'SuperComic', align: 'center', fontSize: '11px', color: this.colors.get('themePrimaryDark')}).setDepth(2).setOrigin(0.5).setAlpha(0.5);
+        this.previewImage = this.add.image(this.game.config.width-200, this.game.config.height-130, 'decor-holder').setDepth(2).setAlpha(0);
     }
 
     drawShop() {
@@ -163,7 +164,8 @@ export default class StoreScene extends Phaser.Scene {
     }
 
     previewItem(itemId) {
-        this.previewImage.setTexture(itemId);
+        this.previewImageInfo.setAlpha(0);
+        this.previewImage.setTexture(itemId).setAlpha(1);
         // let bg = null;
         // let img = null;
         // bg = this.add.rectangle(this.game.config.width-200, this.game.config.height-150, 200, 200, this.colors.getHex('themeTertiary', 0.99))
