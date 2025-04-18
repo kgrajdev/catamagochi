@@ -49,6 +49,11 @@ export default class BootScene extends Phaser.Scene {
         this.load.audio('selectSoundAlt', 'assets/music/select_003.ogg');
         this.load.image('bgImage', 'assets/game-bg.png');
         this.load.image('bgBuildingImage', 'assets/building-bg.png');
+
+        this.load.audio('random-bg-meow-1', 'assets/music/meowlo-1.mp3');
+        this.load.audio('random-bg-meow-3', 'assets/music/meowlo-3.mp3');
+        this.load.audio('random-bg-meow-4', 'assets/music/meowlo-4.mp3');
+        this.load.audio('random-bg-meow-5', 'assets/music/meowlo-5.mp3');
     }
 
     create(){
@@ -75,6 +80,24 @@ export default class BootScene extends Phaser.Scene {
             }).on('pointerout', () => {
                 this.startButton.setStyle({
                     color: this.colors.get('themePrimaryDark')
+                })
+            });
+
+        this.aboutButton = this.add.text(this.game.config.width/2, this.game.config.height/1.1, 'About & Credits', {fontFamily: 'SuperComic', align: 'center', fontSize: '12px', color: this.colors.get('themeSecondaryLight')})
+            .setOrigin(0.5)
+            .setInteractive({useHandCursor: true})
+            .setDepth(1000)
+            .on('pointerdown', () => {
+                this.soundManager.playClickSound();
+                this.scene.start('AboutScene')
+            })
+            .on('pointerover', () => {
+                this.aboutButton.setStyle({
+                    color: this.colors.get('themeSecondaryLight')
+                })
+            }).on('pointerout', () => {
+                this.aboutButton.setStyle({
+                    color: this.colors.get('themeSecondaryLight')
                 })
             });
 

@@ -138,7 +138,37 @@ export default class MainScene extends Phaser.Scene {
             }
             this.registry.set('bgMusic', this.bgMusic); // store in registry for access from other scenes
         }
+        // Store ambient sounds in an array
+        this.randomBackgroundMeowSounds = [
+            this.sound.add('random-bg-meow-1', {
+                loop: false,
+                volume: 1
+            }),
+            this.sound.add('random-bg-meow-3', {
+                loop: false,
+                volume: 1
+            }),
+            this.sound.add('random-bg-meow-4', {
+                loop: false,
+                volume: 1
+            }),
+            this.sound.add('random-bg-meow-5', {
+                loop: false,
+                volume: 1
+            }),
+        ];
+        this.playRandomBackgroundMeowSounds();
 
+    }
+
+    playRandomBackgroundMeowSounds() {
+        // Play a random sound
+        const randomMeowSound = Phaser.Utils.Array.GetRandom(this.randomBackgroundMeowSounds);
+        randomMeowSound.play();
+        // Set the next random interval (e.g., between 9–20 seconds)
+        const delay = Phaser.Math.Between(9000, 20000);
+        // Use a delayed call to play the next one
+        this.time.delayedCall(delay, () => this.playRandomBackgroundMeowSounds(), null, this);
     }
 
 
@@ -605,7 +635,7 @@ export default class MainScene extends Phaser.Scene {
 
 
     showCatNamePrompt() {
-        console.log('show intro name option')
+        // console.log('show intro name option')
     }
 
 }
