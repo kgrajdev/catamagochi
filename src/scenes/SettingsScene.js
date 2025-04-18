@@ -1,6 +1,7 @@
 import Phaser from  'phaser';
 import ColorScheme from "../lib/ColorScheme";
 import Storage from "../lib/storage";
+import SoundManager from "../objects/sound-manager";
 
 export default class SettingsScene extends Phaser.Scene {
 
@@ -14,6 +15,7 @@ export default class SettingsScene extends Phaser.Scene {
     }
 
     create(){
+        this.soundManager = new SoundManager(this);
         this.gameState = this.storage.load('gameState');
 
         // ==== HEADING SECTION
@@ -24,7 +26,8 @@ export default class SettingsScene extends Phaser.Scene {
 
         // ====== NAVIGATION
         this.add.text(this.game.config.width-150, this.sceneHeading.y, 'Return', {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get('themeLight')}).setInteractive({useHandCursor: true})
-            .on('pointerdown', () =>{
+            .on('pointerdown', () => {
+                this.soundManager.playClickSound();
                 this.scene.start('MainScene')
             })
 
@@ -34,6 +37,7 @@ export default class SettingsScene extends Phaser.Scene {
         const musicToggleTextLabel = this.add.text(this.sceneHeading.x, 100, bgMusic.isPlaying ? 'Music:' : 'Music:', {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get('themeLight')})
         const musicToggleButton = this.add.text(musicToggleTextLabel.x+musicToggleTextLabel.width+20, musicToggleTextLabel.y, bgMusic.isPlaying ? 'ON' : 'OFF', {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get('themeLight')}).setInteractive({useHandCursor: true})
         musicToggleButton.on('pointerdown', () => {
+            this.soundManager.playClickSound();
             if (bgMusic.isPlaying) {
                 bgMusic.stop();
                 musicToggleButton.setText('OFF');
@@ -82,6 +86,7 @@ export default class SettingsScene extends Phaser.Scene {
         };
 
         increaseVol.on('pointerdown', () => {
+            this.soundManager.playClickSound();
             if (currentVolume < 1) {
                 currentVolume = Math.min(1, currentVolume + 0.1);
                 updateVolumeUI();
@@ -89,6 +94,7 @@ export default class SettingsScene extends Phaser.Scene {
         });
 
         decreaseVol.on('pointerdown', () => {
+            this.soundManager.playClickSound();
             if (currentVolume > 0) {
                 currentVolume = Math.max(0, currentVolume - 0.1);
                 updateVolumeUI();

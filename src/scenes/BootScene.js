@@ -9,6 +9,7 @@ import {
     DECOR_CATALOG
 } from "../lib/default-properties";
 import ColorScheme from "../lib/ColorScheme";
+import SoundManager from "../objects/sound-manager";
 
 export default class BootScene extends Phaser.Scene {
 
@@ -44,10 +45,15 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('bowl-empty', 'assets/bowl-empty.png');
 
         this.load.audio('bgMusic', 'assets/music/Retro-Beat.ogg');
+        this.load.audio('selectSound', 'assets/music/select_001.ogg');
+        this.load.audio('selectSoundAlt', 'assets/music/select_003.ogg');
         this.load.image('bgImage', 'assets/game-bg.png');
+        this.load.image('bgBuildingImage', 'assets/building-bg.png');
     }
 
     create(){
+        this.soundManager = new SoundManager(this);
+
         this.add.image(this.game.config.width/2, this.game.config.height/2, 'bgImage').setDepth(1);
 
         this.add.text(this.game.config.width/2, this.game.config.height/2-100, 'Catamagochi', {fontFamily: 'SuperComic', align: 'center', fontSize: '35px', color: this.colors.get('themePrimary')})
@@ -59,6 +65,7 @@ export default class BootScene extends Phaser.Scene {
             .setInteractive({useHandCursor: true})
             .setDepth(1000)
             .on('pointerdown', () => {
+                this.soundManager.playClickSound();
                 this.scene.start('MainScene')
             })
             .on('pointerover', () => {

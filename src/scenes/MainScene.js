@@ -10,6 +10,7 @@ import {
 } from "../lib/default-properties"
 import ColorScheme from "../lib/ColorScheme";
 import MainNavigation from "../objects/main-navigation";
+import SoundManager from "../objects/sound-manager";
 
 export default class MainScene extends Phaser.Scene {
 
@@ -23,6 +24,7 @@ export default class MainScene extends Phaser.Scene {
 
     create() {
         this.add.image(this.game.config.width/2, this.game.config.height/2, 'bgImage').setDepth(1)
+        this.add.image(this.game.config.width/2, this.game.config.height/1.05, 'bgBuildingImage').setDepth(1)
 
         // Load game state either from localStorage or from Defaults
         this.gameState = this.storage.load('gameState') || {
@@ -64,12 +66,14 @@ export default class MainScene extends Phaser.Scene {
         if (!this.gameState.catName) {
             this.showCatNamePrompt()
         }
+        // ==== INIT SOUND MANAGER
+        this.soundManager = new SoundManager(this);
 
         // Check daily rewards (AP reset and cash bonus).
         this.checkDailyRewards();
 
         // ====== NAVIGATION
-        this.mainNav = new MainNavigation(this, this.gameState);
+        this.mainNav = new MainNavigation(this, this.gameState, this.soundManager);
         this.mainNav.createNavigation();
         // ======== NAVIGATION END
 
@@ -101,7 +105,7 @@ export default class MainScene extends Phaser.Scene {
         this.createActionButton('fillFood', 405, 420);
         this.createActionButton('fillWater', 450, 445);
         this.createActionButton('cleanTray', 290, 365);
-        this.createActionButton('play', 530, 400);
+        this.createActionButton('play', 365, 375);
 
         // Save on page exit
         window.addEventListener('beforeunload', () => {
@@ -111,10 +115,10 @@ export default class MainScene extends Phaser.Scene {
 
         // Four‐corner walk area
         this.walkAreaPoints = [
-            { x: 480, y: 220 },   // top‑left
-            { x: 680, y: 330 },   // top‑right
-            { x: 540, y: 440 },   // bottom‑right
-            { x: 330, y: 330 }    // bottom‑left
+            { x: 400, y: 330 },   // top‑left
+            { x: 590, y: 370 },   // top‑right
+            { x: 400, y: 400 },   // bottom‑right
+            { x: 540, y: 440 }    // bottom‑left
         ];
         // Build the polygon from those points
         this.walkPolygon = new Phaser.Geom.Polygon(
@@ -134,6 +138,7 @@ export default class MainScene extends Phaser.Scene {
             }
             this.registry.set('bgMusic', this.bgMusic); // store in registry for access from other scenes
         }
+
     }
 
 
@@ -200,11 +205,12 @@ export default class MainScene extends Phaser.Scene {
             background: { x: this.game.config.width/2, y: this.game.config.height/2, depth: 999 },
             bed: { x: 600, y: 325, depth: 1000 },
             windowL: { x: 400, y: 200, depth: 1000 },
-            windowR: { x: 550, y: 200, depth: 1000 },
-            plant: { x: 570, y: 230, depth: 1000 },
+            windowR: { x: 600, y: 215, depth: 1000 },
+            plant: { x: 440, y: 235, depth: 1001 },
             platform: { x: 495, y: 210, depth: 1000 },
             shelf: { x: 345, y: 295, depth: 1000 },
-            picture: { x: 400, y: 250, depth: 1000 }
+            tree: { x: 675, y: 330, depth: 1000 },
+            picture: { x: 320, y: 210, depth: 1000 }
         };
 
         Object.entries(this.gameState.selectedDecor).forEach(([decorType, spriteKey]) => {
@@ -294,6 +300,9 @@ export default class MainScene extends Phaser.Scene {
             console.log('not enough AP')
             return;
         }
+        // play sound
+        this.soundManager.playClickSound();
+
         // Cancel any idle timers because the cat is now busy
         if (this.idleTimer) {
             this.idleTimer.remove(false);
