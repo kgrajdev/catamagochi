@@ -620,8 +620,6 @@ export default class StoreScene extends Phaser.Scene {
         this.gameState.unlockedDecor[category].push(item.id);
 
         this.selectDecor(category, item.id);
-        // this.storage.save(this.gameState);
-        // this.scene.restart(); // refresh visuals
     }
 
     selectDecor(category, itemId) {

@@ -44,6 +44,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('bowl-empty', 'assets/bowl-empty.png');
 
         this.load.audio('bgMusic', 'assets/music/Retro-Beat.ogg');
+        this.load.audio('selectSound', 'assets/music/select_001.ogg');
         this.load.image('bgImage', 'assets/game-bg.png');
     }
 

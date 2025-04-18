@@ -2,11 +2,12 @@ import ColorScheme from "../lib/ColorScheme";
 import Storage from "../lib/storage";
 
 export default class MainNavigation {
-    constructor(scene, gameState) {
+    constructor(scene, gameState, soundManager) {
         this.scene = scene;
         this.colors = new ColorScheme();
         this.storage = new Storage();
         this.gameState = gameState;
+        this.soundManager = soundManager;
     }
 
     createNavigation() {
@@ -19,6 +20,7 @@ export default class MainNavigation {
         };
         this.shopButton = this.scene.add.text(this.navAnchor.x, this.navAnchor.y + this.navAnchor.height, 'Shop', this.navItemStyle).setDepth(2).setInteractive({useHandCursor: true})
             .on('pointerdown', () => {
+                this.soundManager.playClickSound();
                 this.storage.save(this.gameState);
                 this.scene.scene.start('StoreScene')
             })
@@ -33,6 +35,7 @@ export default class MainNavigation {
             });
         this.achievementsButton = this.scene.add.text(this.navAnchor.x + 50, this.navAnchor.y + this.navAnchor.height + 25, 'Achievements', this.navItemStyle).setDepth(2).setInteractive({useHandCursor: true})
             .on('pointerdown', () => {
+                this.soundManager.playClickSound();
                 this.storage.save(this.gameState);
                 this.scene.scene.start('AchievementsScene')
             })
@@ -47,6 +50,7 @@ export default class MainNavigation {
             });
         this.settingsButton = this.scene.add.text(this.navAnchor.x + 100, this.navAnchor.y + this.navAnchor.height + 50, 'Settings', this.navItemStyle).setDepth(2).setInteractive({useHandCursor: true})
             .on('pointerdown', () => {
+                this.soundManager.playClickSound();
                 this.storage.save(this.gameState);
                 this.scene.scene.start('SettingsScene')
             })

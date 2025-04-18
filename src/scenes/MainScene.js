@@ -10,6 +10,7 @@ import {
 } from "../lib/default-properties"
 import ColorScheme from "../lib/ColorScheme";
 import MainNavigation from "../objects/main-navigation";
+import SoundManager from "../objects/sound-manager";
 
 export default class MainScene extends Phaser.Scene {
 
@@ -64,12 +65,14 @@ export default class MainScene extends Phaser.Scene {
         if (!this.gameState.catName) {
             this.showCatNamePrompt()
         }
+        // ==== INIT SOUND MANAGER
+        this.soundManager = new SoundManager(this);
 
         // Check daily rewards (AP reset and cash bonus).
         this.checkDailyRewards();
 
         // ====== NAVIGATION
-        this.mainNav = new MainNavigation(this, this.gameState);
+        this.mainNav = new MainNavigation(this, this.gameState, this.soundManager);
         this.mainNav.createNavigation();
         // ======== NAVIGATION END
 
@@ -134,6 +137,7 @@ export default class MainScene extends Phaser.Scene {
             }
             this.registry.set('bgMusic', this.bgMusic); // store in registry for access from other scenes
         }
+
     }
 
 
@@ -294,6 +298,9 @@ export default class MainScene extends Phaser.Scene {
             console.log('not enough AP')
             return;
         }
+        // play sound
+        this.soundManager.playClickSound();
+
         // Cancel any idle timers because the cat is now busy
         if (this.idleTimer) {
             this.idleTimer.remove(false);
