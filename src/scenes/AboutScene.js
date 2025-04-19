@@ -35,8 +35,15 @@ export default class AboutScene extends Phaser.Scene {
                 })
             })
 
-        this.aboutText = this.add.text(this.game.config.width/2, this.game.config.height/2.9, 'Lorem Ipsum Dolor Sit Amet,\nImpis et Enes Revo.\nTero Fed Ager.', {fontFamily: 'SuperComic', align: 'left', fontSize: '20px', color: this.colors.get('themePrimaryDark')}).setDepth(2).setOrigin(0.5)
-        this.creditsText = this.add.text(this.game.config.width/2, this.game.config.height/1.7, 'Lorem Ipsum Dolor Sit Amet,\nImpis et Enes Revo.\nTero Fed Ager.', {fontFamily: 'SuperComic', align: 'left', fontSize: '20px', color: this.colors.get('themePrimaryDark')}).setDepth(2).setOrigin(0.5)
+        let currentYear = new Date().getFullYear()
+        this.aboutText = this.add.text(this.game.config.width/2, this.game.config.height/2.9,
+            `©${currentYear} KamilGrajDev
+                 \n`,
+            {fontFamily: 'SuperComic', align: 'left', fontSize: '20px', color: this.colors.get('themePrimaryDark')}).setDepth(2).setOrigin(0.5)
+        this.creditsText = this.add.text(this.game.config.width/2, this.game.config.height/1.7,
+            `Credits
+                 \ntoffeecraft.itch.io\nkenney.itch.io`,
+            {fontFamily: 'SuperComic', align: 'left', fontSize: '20px', color: this.colors.get('themePrimaryDark')}).setDepth(2).setOrigin(0.5)
     }
 
 

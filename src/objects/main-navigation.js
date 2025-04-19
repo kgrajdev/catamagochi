@@ -1,5 +1,6 @@
 import ColorScheme from "../lib/ColorScheme";
 import Storage from "../lib/storage";
+import AchievementManager from "../lib/AchievementManager";
 
 export default class MainNavigation {
     constructor(scene, gameState, soundManager) {
@@ -8,6 +9,7 @@ export default class MainNavigation {
         this.storage = new Storage();
         this.gameState = gameState;
         this.soundManager = soundManager;
+        this.achMgr = new AchievementManager(this.gameState, this.storage);
     }
 
     createNavigation() {
@@ -37,7 +39,11 @@ export default class MainNavigation {
             .on('pointerdown', () => {
                 this.soundManager.playClickSound();
                 this.storage.save(this.gameState);
-                this.scene.scene.start('AchievementsScene')
+                // this.scene.scene.start('AchievementsScene')
+                this.scene.scene.launch('AchievementsScene', {
+                    gameState: this.gameState,
+                    achMgr: this.achMgr
+                });
             })
             .on('pointerover', () => {
                 this.achievementsButton.setStyle({

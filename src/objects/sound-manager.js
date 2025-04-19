@@ -3,6 +3,7 @@ export default class SoundManager {
         this.scene = scene;
         this.clickSound = this.scene.sound.add('selectSound');
         this.clickSoundAlt = this.scene.sound.add('selectSoundAlt');
+        this.achievementSound = this.scene.sound.add('achievementSound');
     }
 
     playClickSound = () => {
@@ -13,6 +14,11 @@ export default class SoundManager {
     playClickSoundAlt = () => {
         if (!this.clickSoundAlt.isPlaying) {
             this.clickSoundAlt.play();
+        }
+    };
+    playAchievementSound = () => {
+        if (!this.achievementSound.isPlaying) {
+            this.achievementSound.play();
         }
     };
 }

@@ -67,8 +67,12 @@ export const DECOR_CATALOG = {
         { id: "tree1", name: "tree 1", price: 100 },
         { id: "tree2", name: "tree 2", price: 200 },
         { id: "tree3", name: "tree 3", price: 300 }
+    ],
+    actionPoints: [
+        { id: "apPack1", name: "10 Action Points Pack", points: 10, price: 100 },
+        { id: "apPack2", name: "30 Action Points Pack", points: 30, price: 300 },
+        { id: "apPack3", name: "50 Action Points Pack", points: 50, price: 500 }
     ]
-
 };
 
 export const MAX_STATS = {

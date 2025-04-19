@@ -11,6 +11,7 @@ import {
 import ColorScheme from "../lib/ColorScheme";
 import MainNavigation from "../objects/main-navigation";
 import SoundManager from "../objects/sound-manager";
+import AchievementManager from "../lib/AchievementManager";
 
 export default class MainScene extends Phaser.Scene {
 
@@ -29,8 +30,8 @@ export default class MainScene extends Phaser.Scene {
         // Load game state either from localStorage or from Defaults
         this.gameState = this.storage.load('gameState') || {
             stats: {...DEFAULT_STATS},
-            AP: 10,
-            coins: 5100,
+            AP: 12,
+            coins: 987,
             catName: null,
             lastSave: Date.now(),
             lastLogin: null,
@@ -39,6 +40,7 @@ export default class MainScene extends Phaser.Scene {
                 bgMusicVolume: 0.5,
                 isBgMusicOn: true
             },
+            purchasedApPacks: [],
             unlockedDecor: {
                 bed: [],
                 picture: [],
@@ -66,6 +68,26 @@ export default class MainScene extends Phaser.Scene {
         if (!this.gameState.catName) {
             this.showCatNamePrompt()
         }
+        // ====== ACHIEVEMENTS
+        const achievementMgr = new AchievementManager(
+            this.gameState,
+            this.storage,
+            this.game.events
+        );
+        this.registry.set('achMgr', achievementMgr);
+        this.achMgr = this.registry.get('achMgr');
+
+        // bind listener so we can easily remove it later
+        this._onAchUnlocked = this.onAchievementUnlocked.bind(this);
+
+        // subscribe
+        this.achMgr.on('achievementUnlocked', this._onAchUnlocked);
+
+        // unsubscribe when this scene shuts down
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+            this.achMgr.emitter.off('achievementUnlocked', this._onAchUnlocked);
+        });
+
         // ==== INIT SOUND MANAGER
         this.soundManager = new SoundManager(this);
 
@@ -115,11 +137,14 @@ export default class MainScene extends Phaser.Scene {
 
         // Four‐corner walk area
         this.walkAreaPoints = [
-            { x: 400, y: 330 },   // top‑left
-            { x: 590, y: 370 },   // top‑right
-            { x: 400, y: 400 },   // bottom‑right
-            { x: 540, y: 440 }    // bottom‑left
+            { x: 455, y: 300 },
+            { x: 590, y: 380 },
+            { x: 510, y: 430 },
+            { x: 400, y: 360 }
         ];
+        // ===== FOR DEV TESTING ONLY
+        // this.devTestWalkArea(this.walkAreaPoints);
+
         // Build the polygon from those points
         this.walkPolygon = new Phaser.Geom.Polygon(
             this.walkAreaPoints.flatMap(p => [ p.x, p.y ])
@@ -161,6 +186,32 @@ export default class MainScene extends Phaser.Scene {
 
     }
 
+    // show a floating toast
+    onAchievementUnlocked(def) {
+        this.soundManager.playAchievementSound();
+        const msg = this.add.text(this.game.config.width/2, this.game.config.height-100,
+            `🏆 Achievement Unlocked:\n${def.desc}!`, {
+                fontFamily: 'SuperComic',
+                fontSize: '19px',
+                color: this.colors.get('themePrimaryLight'),
+                align: 'center',
+                backgroundColor: this.colors.get('themePrimaryDark'),
+                padding: { x: 15, y: 7 }
+            })
+            .setOrigin(0.5)
+            .setDepth(1000);
+
+        // fade out & destroy after 3s
+        this.tweens.add({
+            targets: msg,
+            alpha: { from: 1, to: 0 },
+            ease: 'Linear',
+            duration: 850,
+            delay: 2500,
+            onComplete: () => msg.destroy()
+        });
+    }
+
     playRandomBackgroundMeowSounds() {
         // Play a random sound
         const randomMeowSound = Phaser.Utils.Array.GetRandom(this.randomBackgroundMeowSounds);
@@ -193,14 +244,14 @@ export default class MainScene extends Phaser.Scene {
             this.updateProgressBar(key, value);
         });
 
-        this.apText = this.add.text(barX, barYStart + 200, `AP: ${this.gameState.AP}`, {
+        this.apText = this.add.text(barX, barYStart + 260, `AP: ${this.gameState.AP}`, {
             fontSize: '16px',
             color: '#ffffff'
         }).setDepth(2).setInteractive({useHandCursor: true})
         .on('pointerdown', () => {
             this.showDailyRewardDetails(); // When the AP text is clicked, display current daily rewards.
         });
-        this.coinText = this.add.text(barX, barYStart + 230, `Coins: ${this.gameState.coins}`, {
+        this.coinText = this.add.text(barX, barYStart + 280, `Coins: ${this.gameState.coins}`, {
             fontSize: '16px',
             color: '#ffff00'
         }).setDepth(2).setInteractive({useHandCursor: true})
@@ -372,6 +423,12 @@ export default class MainScene extends Phaser.Scene {
                 break;
         }
 
+        // track actions for achievements
+        if (action === 'fillFood')  this.registry.get('achMgr').recordEvent('feed');
+        if (action === 'fillWater') this.registry.get('achMgr').recordEvent('water');
+        if (action === 'play')      this.registry.get('achMgr').recordEvent('play');
+
+
         // Animate cat
         // For the action animation: move the cat to the target, do the action, then return the cat.
         // After completing the action, ensure the cat goes back to idle:
@@ -495,6 +552,9 @@ export default class MainScene extends Phaser.Scene {
             // Already logged in today; no need to change AP or award daily cash.
             return;
         } else {
+            // On daily login:
+            this.registry.get('achMgr').recordEvent('login'); // track for achievements
+
             // Determine if the login is consecutive.
             if (!lastLogin) {
                 // First login; start a new streak.
@@ -638,4 +698,23 @@ export default class MainScene extends Phaser.Scene {
         // console.log('show intro name option')
     }
 
+    devTestWalkArea(walkAreaPoints) {
+        walkAreaPoints.forEach((corner, idx) => {
+            this.add.text(corner.x, corner.y, ''+idx, {color: '#ff1111'}).setDepth(9999);
+        })
+        const graphics = this.add.graphics();
+        graphics.lineStyle(2, 0xff0000, 1); // (thickness, color, alpha)
+
+        // Draw the 4 lines using moveTo and lineTo
+        graphics.beginPath();
+
+        for (let i = 0; i < walkAreaPoints.length; i++) {
+            const start = walkAreaPoints[i];
+            const end = walkAreaPoints[(i + 1) % walkAreaPoints.length]; // loops back to 0 at the end
+
+            graphics.moveTo(start.x, start.y);
+            graphics.lineTo(end.x, end.y);
+        }
+        graphics.strokePath().setDepth(9999);
+    }
 }
