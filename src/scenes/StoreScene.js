@@ -3,6 +3,7 @@ import Storage from "../lib/storage";
 import ColorScheme from "../lib/ColorScheme";
 import StoreRenderer from "../objects/store-renderer";
 import SoundManager from "../objects/sound-manager";
+import AchievementManager from "../lib/AchievementManager";
 
 export default class StoreScene extends Phaser.Scene {
     constructor() {
@@ -24,6 +25,7 @@ export default class StoreScene extends Phaser.Scene {
         this.soundManager = new SoundManager(this);
         this.add.image(this.game.config.width/2, this.game.config.height/2, 'bgImage').setDepth(1)
         this.gameState = this.storage.load('gameState');
+        this.achMgr = new AchievementManager(this.gameState, this.storage);
         this.drawShop();
 
         // ==== HEADING SECTION
@@ -151,6 +153,7 @@ export default class StoreScene extends Phaser.Scene {
             console.log('not enough coins')
             return;
         }
+        this.achMgr.recordEvent('unlock'); // tracking for achievements
 
         this.gameState.coins -= item.price;
         this.gameState.unlockedDecor[category].push(item.id);

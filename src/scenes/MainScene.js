@@ -11,6 +11,7 @@ import {
 import ColorScheme from "../lib/ColorScheme";
 import MainNavigation from "../objects/main-navigation";
 import SoundManager from "../objects/sound-manager";
+import AchievementManager from "../lib/AchievementManager";
 
 export default class MainScene extends Phaser.Scene {
 
@@ -66,6 +67,9 @@ export default class MainScene extends Phaser.Scene {
         if (!this.gameState.catName) {
             this.showCatNamePrompt()
         }
+        // ===== INIT ACHIEVEMENTS
+        this.achMgr = new AchievementManager(this.gameState, this.storage);
+
         // ==== INIT SOUND MANAGER
         this.soundManager = new SoundManager(this);
 
@@ -372,6 +376,12 @@ export default class MainScene extends Phaser.Scene {
                 break;
         }
 
+        // track actions for achievements
+        if (action === 'fillFood')  this.achMgr.recordEvent('feed');
+        if (action === 'fillWater') this.achMgr.recordEvent('water');
+        if (action === 'play')      this.achMgr.recordEvent('play');
+
+
         // Animate cat
         // For the action animation: move the cat to the target, do the action, then return the cat.
         // After completing the action, ensure the cat goes back to idle:
@@ -495,6 +505,9 @@ export default class MainScene extends Phaser.Scene {
             // Already logged in today; no need to change AP or award daily cash.
             return;
         } else {
+            // On daily login:
+            this.achMgr.recordEvent('login'); // track for achievements
+
             // Determine if the login is consecutive.
             if (!lastLogin) {
                 // First login; start a new streak.
