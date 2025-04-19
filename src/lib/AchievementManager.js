@@ -1,9 +1,11 @@
 import { ACHIEVEMENT_DEFS } from './achievements';
 
 export default class AchievementManager {
-    constructor(gameState, storage) {
+    constructor(gameState, storage, emitter = null) {
         this.state = gameState;
         this.storage = storage;
+
+        this.emitter = emitter || new Phaser.Events.EventEmitter();
 
         // Initialize counters if missing
         this.state.feedCount    = this.state.feedCount    || 0;
@@ -16,7 +18,12 @@ export default class AchievementManager {
         this.state.claimedAchievements  = this.state.claimedAchievements  || [];
     }
 
+    on(event, fn, ctx) {
+        this.emitter.on(event, fn, ctx);
+    }
+
     recordEvent(eventType, value = null) {
+console.log('recorded event for achievs', eventType);
         switch (eventType) {
             case 'feed':     this.state.feedCount++;     break;
             case 'water':    this.state.waterCount++;    break;
@@ -29,14 +36,12 @@ export default class AchievementManager {
             default: return;
         }
         this.checkAchievements();
-        this.persist();
     }
 
     // Call after any stat change if you want stat‑based achievements
     checkStat(key, value) {
         this.state[key] = value;
         this.checkAchievements();
-        this.persist();
     }
 
     checkAchievements() {
@@ -54,17 +59,21 @@ export default class AchievementManager {
             }
 
             if (current >= def.threshold) {
+                // 1) record achievement trigger
                 this.state.unlockedAchievements.push(def.id);
+                // 2) emit an event
+                this.emitter.emit('achievementUnlocked', def);
+                this.storage.save('gameState', this.state);
             }
         });
     }
 
-    getUnlockableAchievements() {
-        // Returns all unlocked but not yet claimed
-        return this.state.unlockedAchievements.filter(id =>
-            !this.state.claimedAchievements.includes(id)
-        ).map(id => ACHIEVEMENT_DEFS.find(def => def.id === id));
-    }
+    // getUnlockableAchievements() {
+    //     // Returns all unlocked but not yet claimed
+    //     return this.state.unlockedAchievements.filter(id =>
+    //         !this.state.claimedAchievements.includes(id)
+    //     ).map(id => ACHIEVEMENT_DEFS.find(def => def.id === id));
+    // }
 
     claimAchievement(id) {
         if (this.state.claimedAchievements.includes(id)) return false;
@@ -73,11 +82,8 @@ export default class AchievementManager {
 
         this.state.claimedAchievements.push(id);
         this.state.coins += def.reward;
-        this.persist();
-        return true;
-    }
 
-    persist() {
         this.storage.save('gameState', this.state);
+        return true;
     }
 }

@@ -1,9 +1,8 @@
-import {DECOR_CATALOG, PLAYER_CONFIG} from "../lib/default-properties";
+import {DECOR_CATALOG, PLAYER_CONFIG, ACTION_POINTS_PACKS} from "../lib/default-properties";
 import Storage from "../lib/storage";
 import ColorScheme from "../lib/ColorScheme";
 import StoreRenderer from "../objects/store-renderer";
 import SoundManager from "../objects/sound-manager";
-import AchievementManager from "../lib/AchievementManager";
 
 export default class StoreScene extends Phaser.Scene {
     constructor() {
@@ -19,13 +18,25 @@ export default class StoreScene extends Phaser.Scene {
         this.platformsContainer = [];
         this.shelvesContainer = [];
         this.treesContainer = [];
+        this.actionPointsContainer = [];
     }
 
     create() {
         this.soundManager = new SoundManager(this);
         this.add.image(this.game.config.width/2, this.game.config.height/2, 'bgImage').setDepth(1)
         this.gameState = this.storage.load('gameState');
-        this.achMgr = new AchievementManager(this.gameState, this.storage);
+
+        // ==== ACHIEVEMENTS
+        this.achMgr = this.registry.get('achMgr');
+        // bind & subscribe
+        this._onAchUnlocked = this.onAchievementUnlocked.bind(this);
+        this.achMgr.on('achievementUnlocked', this._onAchUnlocked);
+        // unsubscribe on shutdown
+        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+            this.achMgr.emitter.off('achievementUnlocked', this._onAchUnlocked);
+        });
+
+        // === main store method to render scene
         this.drawShop();
 
         // ==== HEADING SECTION
@@ -80,6 +91,11 @@ export default class StoreScene extends Phaser.Scene {
                 label: 'Furniture',
                 containers: ['bedsContainer', 'platformsContainer', 'shelvesContainer', 'treesContainer'],
             },
+            {
+                key: 'gameplay',
+                label: 'Gameplay',
+                containers: ['actionPointsContainer'],
+            },
         ];
 
 
@@ -117,7 +133,7 @@ export default class StoreScene extends Phaser.Scene {
 
         // ==== render tab content
         const renderer = new StoreRenderer(this, DECOR_CATALOG, this.gameState, this.colors, this.soundManager);
-        renderer.renderCategory('background', this.backgroundsContainer, 25, 120);
+        renderer.renderCategory('background', this.backgroundsContainer, 25, 130);
         renderer.renderCategory('windowL', this.windowsLContainer, 25, 140);
         renderer.renderCategory('windowR', this.windowsRContainer, 25,160);
         renderer.renderCategory('picture', this.wallDecorsContainer, 25,-260);
@@ -126,6 +142,7 @@ export default class StoreScene extends Phaser.Scene {
         renderer.renderCategory('platform', this.platformsContainer, 25,-540);
         renderer.renderCategory('shelf', this.shelvesContainer, 350,-800);
         renderer.renderCategory('tree', this.treesContainer, 25,-670);
+        renderer.renderStoreGameplaySection('actionPoints', this.actionPointsContainer, 0,-1040);
 
 
         this.showTab = (selectedKey) => {
@@ -142,6 +159,7 @@ export default class StoreScene extends Phaser.Scene {
             selectedTab.containers.forEach(containerKey => {
                 this[containerKey]?.forEach?.(item => item.setVisible(true));
             });
+
         };
         // by default, show just the first tab content
         this.showTab('room');
@@ -153,13 +171,25 @@ export default class StoreScene extends Phaser.Scene {
             console.log('not enough coins')
             return;
         }
+        console.log('record unlock bit....'); //todo: does not seem to work
         this.achMgr.recordEvent('unlock'); // tracking for achievements
 
         this.gameState.coins -= item.price;
         this.gameState.unlockedDecor[category].push(item.id);
         this.selectDecor(category, item.id);
     }
+    purchaseAP(actionPointsPack) {
+        if (this.gameState.coins < actionPointsPack.price) {
+            console.log('not enough coins')
+            return;
+        }
+        this.gameState.coins -= actionPointsPack.price;
+        this.gameState.purchasedApPacks.push(actionPointsPack.id);
 
+        this.gameState.AP += actionPointsPack.points;
+        this.storage.save(this.gameState);
+        this.scene.restart(); // refresh visuals
+    }
     selectDecor(category, itemId) {
         this.gameState.selectedDecor[category] = itemId;
         this.storage.save(this.gameState)
@@ -180,5 +210,31 @@ export default class StoreScene extends Phaser.Scene {
         //     img.destroy()
         //     // this.input.enabled = true;
         // });
+    }
+
+    onAchievementUnlocked(def) {
+        this.soundManager.playAchievementSound();
+        this.add.text(400, 400, 'rigdsiugfiubsofgiuyer').setDepth(9999);
+        const msg = this.add.text(this.game.config.width/2, this.game.config.height-100,
+            `🏆 Achievement Unlocked:\n${def.desc}!`, {
+                fontFamily: 'SuperComic',
+                fontSize: '19px',
+                color: this.colors.get('themePrimaryLight'),
+                align: 'center',
+                backgroundColor: this.colors.get('themePrimaryDark'),
+                padding: { x: 15, y: 7 }
+            })
+            .setOrigin(0.5)
+            .setDepth(1000);
+
+        // fade out & destroy after 3s
+        this.tweens.add({
+            targets: msg,
+            alpha: { from: 1, to: 0 },
+            ease: 'Linear',
+            duration: 850,
+            delay: 2500,
+            onComplete: () => msg.destroy()
+        });
     }
 }
