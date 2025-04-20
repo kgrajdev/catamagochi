@@ -35,10 +35,18 @@ export default class MainScene extends Phaser.Scene {
             catName: null,
             lastSave: Date.now(),
             lastLogin: null,
-            loginStreak: 0,
+            selectedStoreTab: null,
             gameSettings: {
                 bgMusicVolume: 0.5,
                 isBgMusicOn: true
+            },
+            achievementCountTrackers: {
+                feedCount: 0,
+                waterCount: 0,
+                playCount: 0,
+                unlockCount: 0,
+                totalDays: 0,
+                loginStreak: 0
             },
             purchasedApPacks: [],
             unlockedDecor: {
@@ -269,7 +277,7 @@ export default class MainScene extends Phaser.Scene {
 
     // Display a temporary popup with details of today's rewards.
     showDailyRewardDetails() {
-        const detailText = `Daily Rewards: \nAction Points: ${DAILY_AWARDS.dailyActionPoints} (unused AP are lost) \nDaily Cash Bonus: ${DAILY_AWARDS.cashBase + ((this.gameState.loginStreak - 1) * DAILY_AWARDS.cashIncrement)} coins \nLogin Streak: ${this.gameState.loginStreak} day(s)`;
+        const detailText = `Daily Rewards: \nAction Points: ${DAILY_AWARDS.dailyActionPoints} (unused AP are lost) \nDaily Cash Bonus: ${DAILY_AWARDS.cashBase + ((this.gameState.achievementCountTrackers.loginStreak - 1) * DAILY_AWARDS.cashIncrement)} coins \nLogin Streak: ${this.gameState.achievementCountTrackers.loginStreak} day(s)`;
 
         const popup = this.add.text(400, 100, detailText, {
             fontSize: '18px',
@@ -545,7 +553,7 @@ export default class MainScene extends Phaser.Scene {
     checkDailyRewards() {
         const today = new Date().toISOString().slice(0, 10); // Format: YYYY-MM-DD
         let lastLogin = this.gameState.lastLogin;
-        let loginStreak = this.gameState.loginStreak || 0;
+        let loginStreak = this.gameState.achievementCountTrackers.loginStreak || 0;
 
         // Only process if this is a new day.
         if (lastLogin === today) {
@@ -584,11 +592,13 @@ export default class MainScene extends Phaser.Scene {
 
             // Update login data in the game state.
             this.gameState.lastLogin = today;
-            this.gameState.loginStreak = loginStreak;
+            this.gameState.achievementCountTrackers.loginStreak = loginStreak;
 
             // Update the UI to show the new AP and coin totals.
             this.updateAPDisplay();
             this.updateCoinsDisplay();
+
+            // todo: add notification about consecutive login bonus award
 
             // Save the updated game state.
             this.storage.save('gameState', this.gameState);

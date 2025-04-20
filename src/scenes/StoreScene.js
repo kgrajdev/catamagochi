@@ -146,6 +146,8 @@ export default class StoreScene extends Phaser.Scene {
 
 
         this.showTab = (selectedKey) => {
+            this.gameState.selectedStoreTab = selectedKey;
+            this.storage.save(this.gameState);
 
             // Hide all containers first
             tabs.forEach(tab => {
@@ -161,18 +163,18 @@ export default class StoreScene extends Phaser.Scene {
             });
 
         };
-        // by default, show just the first tab content
-        this.showTab('room');
+        // show the last opened tab or the first one as fallback
+        this.showTab(this.gameState.selectedStoreTab ? this.gameState.selectedStoreTab : 'room');
 
     }
 
     purchaseItem(category, item) {
         if (this.gameState.coins < item.price) {
-            console.log('not enough coins')
+            console.log('not enough coins') // todo: add notification message about lack of coins
             return;
         }
-        console.log('record unlock bit....'); //todo: does not seem to work
-        this.achMgr.recordEvent('unlock'); // tracking for achievements
+
+        this.registry.get('achMgr').recordEvent('unlock'); // tracking for achievements
 
         this.gameState.coins -= item.price;
         this.gameState.unlockedDecor[category].push(item.id);
@@ -199,17 +201,6 @@ export default class StoreScene extends Phaser.Scene {
     previewItem(itemId) {
         this.previewImageInfo.setAlpha(0);
         this.previewImage.setTexture(itemId).setAlpha(1);
-        // let bg = null;
-        // let img = null;
-        // bg = this.add.rectangle(this.game.config.width-200, this.game.config.height-150, 200, 200, this.colors.getHex('themeTertiary', 0.99))
-        // img = this.add.image(this.game.config.width-200, this.game.config.height-150, itemId).setScale(1);
-        //
-        // this.time.delayedCall(900, () => {
-        //     console.log('remove preview')
-        //     bg.destroy()
-        //     img.destroy()
-        //     // this.input.enabled = true;
-        // });
     }
 
     onAchievementUnlocked(def) {
