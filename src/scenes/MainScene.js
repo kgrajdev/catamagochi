@@ -30,8 +30,8 @@ export default class MainScene extends Phaser.Scene {
         // Load game state either from localStorage or from Defaults
         this.gameState = this.storage.load('gameState') || {
             stats: {...DEFAULT_STATS},
-            AP: 12,
-            coins: 987,
+            AP: 13,
+            coins: 0,
             catName: null,
             lastSave: Date.now(),
             lastLogin: null,
@@ -386,7 +386,7 @@ export default class MainScene extends Phaser.Scene {
     handleAction(action) {
         const cost = AP_COSTS[action];
         if (this.gameState.AP < cost) {
-            console.log('not enough AP')
+            console.log('not enough AP') //todo: add nicer message
             return;
         }
         // play sound
@@ -407,8 +407,12 @@ export default class MainScene extends Phaser.Scene {
         const statKey = statKeyMap[action];
         const current = this.gameState.stats[statKey];
 
+console.log(current)
+console.log(MAX_STATS[statKey])
+        //todo: need to have a look at preventing wasting of APs if the stat is already at max
+
         if (current >= MAX_STATS[statKey]) {
-            console.log('already full')
+            console.log('already full') //todo: add nicer message
             return;
         }
 
@@ -424,7 +428,7 @@ export default class MainScene extends Phaser.Scene {
                 this.gameState.stats.water = Math.min(current + 20, MAX_STATS.water);
                 break;
             case 'cleanTray':
-                this.gameState.stats.tray = 100;
+                this.gameState.stats.tray = Math.min(current + 100, MAX_STATS.water);
                 break;
             case 'play':
                 this.gameState.stats.happiness = Math.min(current + 15, MAX_STATS.happiness);

@@ -1,6 +1,6 @@
 export const ACHIEVEMENT_DEFS = [
     // Feeding, watering, playing milestones
-    { id: 'feed_5',    desc: 'Feed your cat 5 times',          type: 'count', key: 'feedCount',     threshold: 1,  reward: 10 },
+    { id: 'feed_5',    desc: 'Feed your cat 5 times',          type: 'count', key: 'feedCount',     threshold: 5,  reward: 10 },
     { id: 'feed_10',    desc: 'Feed your cat 10 times',          type: 'count', key: 'feedCount',     threshold: 10,  reward: 20 },
     { id: 'water_5',   desc: 'Give water 5 times',             type: 'count', key: 'waterCount',    threshold: 5,  reward: 10 },
     { id: 'water_10',   desc: 'Give water 10 times',             type: 'count', key: 'waterCount',    threshold: 10,  reward: 20 },

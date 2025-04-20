@@ -1,11 +1,23 @@
+import Phaser from 'phaser';
 import { ACHIEVEMENT_DEFS } from './achievements';
+import Storage from "./storage";
 
 export default class AchievementManager {
     constructor(gameState, storage, emitter = null) {
         this.gameState = gameState;
-        this.storage = storage;
+        this.storage = new Storage();
 
         this.emitter = emitter || new Phaser.Events.EventEmitter();
+
+        // Ensure trackers exist
+        this.gameState.achievementCountTrackers = this.gameState.achievementCountTrackers || {
+            feedCount: 0,
+            waterCount: 0,
+            playCount: 0,
+            unlockCount: 0,
+            loginStreak: 0,
+            totalDays: 0
+        };
 
         this.gameState.unlockedAchievements = this.gameState.unlockedAchievements || [];
         this.gameState.claimedAchievements  = this.gameState.claimedAchievements  || [];
@@ -16,44 +28,40 @@ export default class AchievementManager {
     }
 
     recordEvent(eventType) {
-
+        const t = this.gameState.achievementCountTrackers;
         switch (eventType) {
-            case 'feed':     this.gameState.achievementCountTrackers.feedCount++;     break;
-            case 'water':    this.gameState.achievementCountTrackers.waterCount++;    break;
-            case 'play':     this.gameState.achievementCountTrackers.playCount++;     break;
-            case 'unlock':   this.gameState.achievementCountTrackers.unlockCount++;   break;
-            case 'login':    this.gameState.achievementCountTrackers.totalDays++;     break;
+            case 'feed':   t.feedCount++;   break;
+            case 'water':  t.waterCount++;  break;
+            case 'play':   t.playCount++;   break;
+            case 'unlock': t.unlockCount++; break;
+            case 'login':  t.totalDays++;     break;
             default: return;
         }
-        this.checkAchievements();
-    }
-
-    // Call after any stat change if you want stat‑based achievements
-    checkStat(key, value) {
-        this.gameState[key] = value;
+        this.storage.save(this.gameState);
         this.checkAchievements();
     }
 
     checkAchievements() {
         ACHIEVEMENT_DEFS.forEach(def => {
-            const alreadyUnlocked = this.gameState.unlockedAchievements.includes(def.id);
-            if (alreadyUnlocked) return;
+            if (this.gameState.unlockedAchievements.includes(def.id)) return;
 
             let current;
             switch (def.type) {
-                case 'count':     current = this.gameState.achievementCountTrackers[def.key];      break;
-                case 'streak':    current = this.gameState.achievementCountTrackers.loginStreak;   break;
-                case 'totalDays': current = this.gameState.achievementCountTrackers.totalDays;     break;
-                case 'stat':      current = this.gameState.stats[def.key];break;
+                case 'count':     current = this.gameState.achievementCountTrackers[def.key];    break;
+                case 'streak':    current = this.gameState.achievementCountTrackers.loginStreak; break;
+                case 'totalDays': current = this.gameState.achievementCountTrackers.totalDays;   break;
+                case 'stat':      current = this.gameState.stats[def.key];                       break;
                 default: return;
             }
 
             if (current >= def.threshold) {
                 // 1) record achievement trigger
                 this.gameState.unlockedAchievements.push(def.id);
-                // 2) emit an event
+                // 2) save
+                this.storage.save(this.gameState);
+
+                // 3) emit an event
                 this.emitter.emit('achievementUnlocked', def);
-                this.storage.save(this.gameState)
             }
         });
     }
@@ -66,7 +74,8 @@ export default class AchievementManager {
         this.gameState.claimedAchievements.push(id);
         this.gameState.coins += def.reward;
 
-        this.storage.save(this.gameState)
+        this.storage.save(this.gameState);
+
         return true;
     }
 }

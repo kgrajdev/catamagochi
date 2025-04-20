@@ -23,7 +23,7 @@ export default class MainNavigation {
         this.shopButton = this.scene.add.text(this.navAnchor.x, this.navAnchor.y + this.navAnchor.height, 'Shop', this.navItemStyle).setDepth(2).setInteractive({useHandCursor: true})
             .on('pointerdown', () => {
                 this.soundManager.playClickSound();
-                this.storage.save(this.gameState);
+                // this.storage.save(this.gameState);
                 this.scene.scene.start('StoreScene')
             })
             .on('pointerover', () => {
