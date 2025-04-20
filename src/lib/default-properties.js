@@ -98,7 +98,7 @@ export const DECAY_RATES = {
 };
 
 export const DAILY_AWARDS = {
-    dailyActionPoints: 10, // Constant daily Action Points award
+    dailyActionPoints: 13, // Constant daily Action Points award
     cashBase: 50, // Base cash reward
     cashIncrement: 5 // Increment per day of consecutive login
 }

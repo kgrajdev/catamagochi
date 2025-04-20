@@ -1,201 +1,224 @@
-import {DECOR_CATALOG, PLAYER_CONFIG, ACTION_POINTS_PACKS} from "../lib/default-properties";
+import { DECOR_CATALOG, ACTION_POINTS_PACKS } from "../lib/default-properties";
 import Storage from "../lib/storage";
 import ColorScheme from "../lib/ColorScheme";
 import StoreRenderer from "../objects/store-renderer";
 import SoundManager from "../objects/sound-manager";
+import { ACHIEVEMENT_DEFS } from '../lib/achievements';
 
 export default class StoreScene extends Phaser.Scene {
     constructor() {
         super({ key: 'StoreScene' });
-        this.storage = new Storage();
+        this.gameStorage = new Storage();
         this.colors = new ColorScheme();
-        this.backgroundsContainer = [];
-        this.windowsLContainer = [];
-        this.windowsRContainer = [];
-        this.wallDecorsContainer = [];
-        this.plantsContainer = [];
-        this.bedsContainer = [];
-        this.platformsContainer = [];
-        this.shelvesContainer = [];
-        this.treesContainer = [];
-        this.actionPointsContainer = [];
+        // containers for each category
+        this.backgroundsContainer   = [];
+        this.windowsLContainer      = [];
+        this.windowsRContainer      = [];
+        this.wallDecorsContainer    = [];
+        this.plantsContainer        = [];
+        this.bedsContainer          = [];
+        this.platformsContainer     = [];
+        this.shelvesContainer       = [];
+        this.treesContainer         = [];
+        this.actionPointsContainer  = [];
     }
 
     create() {
         this.soundManager = new SoundManager(this);
-        this.add.image(this.game.config.width/2, this.game.config.height/2, 'bgImage').setDepth(1)
-        this.gameState = this.storage.load('gameState');
+        // background image
+        this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'bgImage').setDepth(1);
 
-        // ==== ACHIEVEMENTS
+        // load state
+        this.gameState = this.gameStorage.load('gameState');
+
+        // achievements
         this.achMgr = this.registry.get('achMgr');
-        // bind & subscribe
         this._onAchUnlocked = this.onAchievementUnlocked.bind(this);
         this.achMgr.on('achievementUnlocked', this._onAchUnlocked);
-        // unsubscribe on shutdown
         this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
             this.achMgr.emitter.off('achievementUnlocked', this._onAchUnlocked);
         });
 
-        // === main store method to render scene
-        this.drawShop();
+        // headings
+        this.sceneHeading = this.add.text(25, 25, 'Shop', {
+            fontFamily: 'SuperComic',
+            fontSize: '20px',
+            color: this.colors.get('themePrimaryDark')
+        }).setDepth(2);
 
-        // ==== HEADING SECTION
-        this.sceneHeading = this.add.text((this.game.config.width-this.game.config.width)+25, 25, 'Shop', {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get('themePrimaryDark')})
-            .setOrigin(0, 0.5).setDepth(2)
-        this.sceneSubHeading = this.add.text(this.sceneHeading.x, this.sceneHeading.y+this.sceneHeading.height, `Unlock decor for ${this.gameState.catName ?? 'Meowlo'}`, {fontFamily: 'SuperComic', align: 'center', fontSize: '13px', color: this.colors.get('themePrimaryDark')})
-            .setOrigin(0, 0.5).setDepth(2)
+        this.sceneSubHeading = this.add.text(
+            25,
+            25 + this.sceneHeading.height,
+            `Unlock decor for ${this.gameState.catName || 'Meowlo'}`,
+            {
+                fontFamily: 'SuperComic',
+                fontSize: '13px',
+                color: this.colors.get('themePrimaryDark')
+            }
+        ).setDepth(2);
 
-        // ====== NAVIGATION
-        this.returnButton = this.add.text(this.game.config.width-150, this.sceneHeading.y, 'Return', {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get('themePrimaryDark')}).setInteractive({useHandCursor: true}).setDepth(2)
+        // return button
+        this.returnButton = this.add.text(this.cameras.main.width - 150, 25, 'Return', {
+            fontFamily: 'SuperComic',
+            fontSize: '20px',
+            color: this.colors.get('themePrimaryDark')
+        })
+            .setInteractive({ useHandCursor: true })
+            .setDepth(2)
             .on('pointerdown', () => {
                 this.soundManager.playClickSound();
-                this.scene.start('MainScene')
-            }).on('pointerover', () =>{
-                this.returnButton.setStyle({
-                    color: this.colors.get('themePrimaryLight')
-                })
-            }).on('pointerout', () =>{
-                this.returnButton.setStyle({
-                    color: this.colors.get('themePrimaryDark')
-                })
+                this.scene.start('MainScene');
             })
+            .on('pointerover', () => this.returnButton.setStyle({ color: this.colors.get('themePrimaryLight') }))
+            .on('pointerout',  () => this.returnButton.setStyle({ color: this.colors.get('themePrimaryDark') }));
 
-        // ===== COINS
-        this.coinsLabel = this.add.text(this.sceneHeading.x+350, this.sceneHeading.y, 'Coins: ', {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get('themePrimaryDark')}).setDepth(2)
-        this.coinsValue = this.add.text(this.coinsLabel.x+this.coinsLabel.width+5, this.coinsLabel.y, this.gameState.coins, {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get('themePrimaryDark')}).setDepth(2)
+        // coins display
+        this.coinsLabel = this.add.text(25 + 350, 25, 'Coins: ', {
+            fontFamily: 'SuperComic',
+            fontSize: '20px',
+            color: this.colors.get('themePrimaryDark')
+        }).setDepth(2);
+        this.coinsValue = this.add.text(
+            this.coinsLabel.x + this.coinsLabel.width + 5,
+            this.coinsLabel.y,
+            this.gameState.coins,
+            { fontFamily: 'SuperComic', fontSize: '20px', color: this.colors.get('themePrimaryDark') }
+        ).setDepth(2);
 
-        // ==== PREVIEW HOLDER
-        this.previewImageInfo = this.add.text(this.game.config.width-200, this.game.config.height-130, 'hover over any of the item names\nto see their preview', {fontFamily: 'SuperComic', align: 'center', fontSize: '11px', color: this.colors.get('themePrimaryDark')}).setDepth(2).setOrigin(0.5).setAlpha(0.5);
-        this.previewImage = this.add.image(this.game.config.width-200, this.game.config.height-130, 'decor-holder').setDepth(2).setAlpha(0);
+        // preview
+        this.previewImageInfo = this.add.text(
+            this.cameras.main.width - 200,
+            this.cameras.main.height - 130,
+            'hover over any item name\nto see preview',
+            { fontFamily: 'SuperComic', fontSize: '11px', color: this.colors.get('themePrimaryDark'), align: 'center' }
+        ).setDepth(2).setOrigin(0.5).setAlpha(0.5);
+
+        this.previewImage = this.add.image(
+            this.cameras.main.width - 200,
+            this.cameras.main.height - 130,
+            'decor-holder'
+        ).setDepth(2).setAlpha(0);
+
+        // renderer instance
+        this.storeRender = new StoreRenderer(
+            this,
+            DECOR_CATALOG,
+            this.gameState,
+            this.colors,
+            this.soundManager
+        );
+
+        this.drawShop();
     }
 
     drawShop() {
         const tabs = [
-            {
-                key: 'room',
-                label: 'Room',
-                containers: ['backgroundsContainer', 'windowsLContainer', 'windowsRContainer'],
-            },
-            {
-                key: 'wallDecor',
-                label: 'Wall Decor',
-                containers: ['wallDecorsContainer'],
-            },
-            {
-                key: 'plant',
-                label: 'Plants',
-                containers: ['plantsContainer'],
-            },
-            {
-                key: 'furniture',
-                label: 'Furniture',
-                containers: ['bedsContainer', 'platformsContainer', 'shelvesContainer', 'treesContainer'],
-            },
-            {
-                key: 'gameplay',
-                label: 'Gameplay',
-                containers: ['actionPointsContainer'],
-            },
+            { key: 'room',      label: 'Room',      containers: ['backgroundsContainer','windowsLContainer','windowsRContainer'] },
+            { key: 'wallDecor', label: 'Wall Decor',containers: ['wallDecorsContainer'] },
+            { key: 'plant',     label: 'Plants',    containers: ['plantsContainer'] },
+            { key: 'furniture', label: 'Furniture', containers: ['bedsContainer','platformsContainer','shelvesContainer','treesContainer'] },
+            { key: 'gameplay',  label: 'Gameplay',  containers: ['actionPointsContainer'] },
         ];
 
-
-        // ==== init tabs
+        // tabs
         let xOffset = 25;
         this.tabTextObjects = {};
-
-        tabs.forEach((tab, index) => {
-            const tabText = this.add.text(xOffset, 100, tab.label, {
+        tabs.forEach(tab => {
+            const txt = this.add.text(xOffset, 100, tab.label, {
                 fontFamily: 'SuperComic',
-                align: 'center',
                 fontSize: '15px',
-                color: this.colors.get('themePrimaryDark'),
-            }).setInteractive({ useHandCursor: true }).setDepth(2);
-
-            this.tabTextObjects[tab.key] = tabText;
-
-            tabText.on('pointerdown', () => {
-                this.soundManager.playClickSound();
-                this.showTab(tab.key);
-            });
-            tabText.on('pointerover', () => {
-                tabText.setStyle({
-                    color: this.colors.get('themePrimaryLight'),
+                color: tab.key === this.gameState.selectedStoreTab ? this.colors.get('themePrimaryLight') : this.colors.get('themePrimaryDark')
+            })
+                .setInteractive({ useHandCursor: true })
+                .setDepth(2)
+                .on('pointerdown', () => {
+                    if (tab.key !== this.gameState.selectedStoreTab) {
+                        this.soundManager.playClickSound();
+                        this.showTab(tab.key);
+                    }
                 })
-            });
-            tabText.on('pointerout', () => {
-                tabText.setStyle({
-                    color: this.colors.get('themePrimaryDark'),
-                })
-            });
+                .on('pointerover', () => txt.setStyle({ color: this.colors.get('themePrimaryLight') }))
+                .on('pointerout',  () => txt.setStyle({ color: this.colors.get('themePrimaryDark') }));
 
-            xOffset += tabText.width + 25;
+            this.tabTextObjects[tab.key] = txt;
+            xOffset += txt.width + 25;
         });
 
-        // ==== render tab content
-        const renderer = new StoreRenderer(this, DECOR_CATALOG, this.gameState, this.colors, this.soundManager);
-        renderer.renderCategory('background', this.backgroundsContainer, 25, 130);
-        renderer.renderCategory('windowL', this.windowsLContainer, 25, 140);
-        renderer.renderCategory('windowR', this.windowsRContainer, 25,160);
-        renderer.renderCategory('picture', this.wallDecorsContainer, 25,-260);
-        renderer.renderCategory('plant', this.plantsContainer, 25,-440);
-        renderer.renderCategory('bed', this.bedsContainer, 25,-560);
-        renderer.renderCategory('platform', this.platformsContainer, 25,-540);
-        renderer.renderCategory('shelf', this.shelvesContainer, 350,-800);
-        renderer.renderCategory('tree', this.treesContainer, 25,-670);
-        renderer.renderStoreGameplaySection('actionPoints', this.actionPointsContainer, 0,-1040);
+        // **Render categories using only the type**:
+        this.storeRender.renderCategory('background', this.backgroundsContainer);
+        this.storeRender.renderCategory('windowL',    this.windowsLContainer);
+        this.storeRender.renderCategory('windowR',    this.windowsRContainer);
+        this.storeRender.renderCategory('picture',    this.wallDecorsContainer);
+        this.storeRender.renderCategory('plant',      this.plantsContainer);
+        this.storeRender.renderCategory('bed',        this.bedsContainer);
+        this.storeRender.renderCategory('platform',   this.platformsContainer);
+        this.storeRender.renderCategory('shelf',      this.shelvesContainer);
+        this.storeRender.renderCategory('tree',       this.treesContainer);
+        this.storeRender.renderStoreGameplaySection('actionPoints', this.actionPointsContainer);
 
 
-        this.showTab = (selectedKey) => {
-            this.gameState.selectedStoreTab = selectedKey;
-            this.storage.save(this.gameState);
+        // tab switcher
+        this.showTab = (key) => {
+            this.gameState.selectedStoreTab = key;
+            this.gameStorage.save(this.gameState);
 
-            // Hide all containers first
-            tabs.forEach(tab => {
-                tab.containers.forEach(containerKey => {
-                    this[containerKey]?.forEach?.(item => item.setVisible(false));
-                });
-            });
+            // hide all
+            tabs.forEach(t =>
+                t.containers.forEach(cKey =>
+                    this[cKey].forEach(item => item.setVisible(false))
+                )
+            );
 
-            // Then show selected tab's containers
-            const selectedTab = tabs.find(tab => tab.key === selectedKey);
-            selectedTab.containers.forEach(containerKey => {
-                this[containerKey]?.forEach?.(item => item.setVisible(true));
-            });
-
+            // show only selected
+            tabs.find(t => t.key === key)
+                .containers.forEach(cKey =>
+                this[cKey].forEach(item => item.setVisible(true))
+            );
         };
-        // show the last opened tab or the first one as fallback
-        this.showTab(this.gameState.selectedStoreTab ? this.gameState.selectedStoreTab : 'room');
 
+        // initial
+        this.showTab(this.gameState.selectedStoreTab || 'room');
     }
 
     purchaseItem(category, item) {
         if (this.gameState.coins < item.price) {
-            console.log('not enough coins') // todo: add notification message about lack of coins
+            console.log('not enough coins'); //todo: add nicer message
             return;
         }
 
-        this.registry.get('achMgr').recordEvent('unlock'); // tracking for achievements
-
+        // spend & persist
         this.gameState.coins -= item.price;
+        // this.gameStorage.save(this.gameState);
+
+        // unlock decor
         this.gameState.unlockedDecor[category].push(item.id);
-        this.selectDecor(category, item.id);
+        this.gameStorage.save(this.gameState);
+
+        // achievements
+        this.achMgr.recordEvent('unlock');
+
+        // update UI
+        this.coinsValue.setText(this.gameState.coins);
+        this.storeRender.updateCategory(category);
+        // this.showAchievementToastIfAny();
     }
-    purchaseAP(actionPointsPack) {
-        if (this.gameState.coins < actionPointsPack.price) {
-            console.log('not enough coins')
+
+    purchaseAP(pack) {
+        if (this.gameState.coins < pack.price) {
+            console.log('not enough coins'); //todo: add nicer message
             return;
         }
-        this.gameState.coins -= actionPointsPack.price;
-        this.gameState.purchasedApPacks.push(actionPointsPack.id);
-
-        this.gameState.AP += actionPointsPack.points;
-        this.storage.save(this.gameState);
-        this.scene.restart(); // refresh visuals
+        this.gameState.coins -= pack.price;
+        this.gameState.purchasedApPacks.push(pack.id);
+        this.gameState.AP += pack.points;
+        this.gameStorage.save(this.gameState);
+        this.scene.restart();
     }
+
     selectDecor(category, itemId) {
         this.gameState.selectedDecor[category] = itemId;
-        this.storage.save(this.gameState)
-        this.scene.restart(); // refresh visuals
+        this.gameStorage.save(this.gameState);
+        this.storeRender.updateCategory(category);
     }
 
     previewItem(itemId) {
@@ -203,22 +226,58 @@ export default class StoreScene extends Phaser.Scene {
         this.previewImage.setTexture(itemId).setAlpha(1);
     }
 
+    showAchievementToastIfAny() {
+
+        const newly = this.achMgr
+            .gameState.unlockedAchievements
+            .filter(id => !this.achMgr.gameState.claimedAchievements.includes(id));
+
+        newly.forEach(id => {
+            const def = ACHIEVEMENT_DEFS.find(d => d.id === id);
+            const msg = this.add.text(
+                this.cameras.main.centerX,
+                this.cameras.main.height - 100,
+                `🏆 Achievement Unlocked:\n${def.desc}!`,
+                {
+                    fontFamily: 'SuperComic',
+                    fontSize: '19px',
+                    color: this.colors.get('themePrimaryLight'),
+                    align: 'center',
+                    backgroundColor: this.colors.get('themePrimaryDark'),
+                    padding: { x: 15, y: 7 }
+                }
+            )
+                .setOrigin(0.5)
+                .setDepth(1000);
+
+            this.tweens.add({
+                targets: msg,
+                alpha: { from: 1, to: 0 },
+                ease: 'Linear',
+                duration: 850,
+                delay: 2500,
+                onComplete: () => msg.destroy()
+            });
+        });
+    }
+
     onAchievementUnlocked(def) {
+        // your toast code here
         this.soundManager.playAchievementSound();
-        this.add.text(400, 400, 'rigdsiugfiubsofgiuyer').setDepth(9999);
-        const msg = this.add.text(this.game.config.width/2, this.game.config.height-100,
-            `🏆 Achievement Unlocked:\n${def.desc}!`, {
+        const msg = this.add.text(
+            this.cameras.main.centerX,
+            this.cameras.main.height - 100,
+            `🏆 Achievement Unlocked:\n${def.desc}!`,
+            {
                 fontFamily: 'SuperComic',
                 fontSize: '19px',
                 color: this.colors.get('themePrimaryLight'),
                 align: 'center',
                 backgroundColor: this.colors.get('themePrimaryDark'),
                 padding: { x: 15, y: 7 }
-            })
-            .setOrigin(0.5)
-            .setDepth(1000);
+            }
+        ).setOrigin(0.5).setDepth(1000);
 
-        // fade out & destroy after 3s
         this.tweens.add({
             targets: msg,
             alpha: { from: 1, to: 0 },
