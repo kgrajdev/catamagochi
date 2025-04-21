@@ -90,7 +90,7 @@ export const AP_COSTS = {
     play: 3
 };
 
-// Constants for decay rates and thresholds (example values)
+// Constants for decay rates and thresholds
 export const DECAY_RATES = {
     food: 0.02,    // per second or tick
     water: 0.02,
@@ -108,3 +108,10 @@ export const RANDOM_IDLE_BEHAVIORS = [
     { key: 'chill', duration: 5000 },
     { key: 'walk', duration: 3000 }          // special behavior that involves moving across the scene
 ];
+export const COLOR_THRESHOLDS = {
+    green:  { min: 80, max: 100 },
+    yellow: { min: 60, max: 79  },
+    orange: { min: 40, max: 59  },
+    red:    { min: 20, max: 39  },
+    black:  { min: 0,  max: 19  }
+}
