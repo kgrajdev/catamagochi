@@ -89,12 +89,19 @@ export const AP_COSTS = {
     cleanTray: 1,
     play: 3
 };
+export const ACTION_DESCRIPTIONS = {
+    fillFood: 'Fill Food Bowl',
+    fillWater: 'Fill Water Bowl',
+    cleanTray: 'Clean Litter Tray',
+    play: 'Play'
+};
 
 // Constants for decay rates and thresholds
 export const DECAY_RATES = {
     food: 0.02,    // per second or tick
     water: 0.02,
-    tray: 0.01
+    tray: 0.01,
+    health: 0.5
 };
 
 export const DAILY_AWARDS = {
@@ -115,3 +122,42 @@ export const COLOR_THRESHOLDS = {
     red:    { min: 20, max: 39  },
     black:  { min: 0,  max: 19  }
 }
+
+export const ACTION_BUTTON_CONFIG = {
+    fillFood: {
+        x: 405,
+        y: 420,
+        statKey:    'food',
+        emptyKey:   'bowl-empty',
+        fullKey:    'bowl-food-full',
+        lowThresh:  COLOR_THRESHOLDS.yellow.min,   // 60
+        highThresh: MAX_STATS.food             // 100
+    },
+    fillWater: {
+        x: 450,
+        y: 445,
+        statKey:    'water',
+        emptyKey:   'bowl-empty',
+        fullKey:    'bowl-water-full',
+        lowThresh:  COLOR_THRESHOLDS.yellow.min,
+        highThresh: MAX_STATS.water
+    },
+    cleanTray: {
+        x: 290,
+        y: 365,
+        statKey:    'tray',
+        emptyKey:   'litter-tray-dirty',
+        fullKey:    'litter-tray-clean',
+        lowThresh:  COLOR_THRESHOLDS.green.min,
+        highThresh: MAX_STATS.tray
+    },
+    play: {
+        x: 365,
+        y: 375,
+        statKey:    'play',
+        emptyKey:   'cat-toy-sprite',
+        fullKey:    'cat-toy-sprite',
+        lowThresh:  COLOR_THRESHOLDS.black.min,
+        highThresh: MAX_STATS.happiness
+    }
+};
