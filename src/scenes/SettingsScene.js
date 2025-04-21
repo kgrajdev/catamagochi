@@ -17,7 +17,7 @@ export default class SettingsScene extends Phaser.Scene {
     create(){
         this.add.image(this.game.config.width/2, this.game.config.height/2, 'bgImage').setDepth(1)
         this.soundManager = new SoundManager(this);
-        this.gameState = this.storage.load('gameState');
+        this.gameState = this.storage.load();
 
         // ==== HEADING SECTION
         this.sceneHeading = this.add.text((this.game.config.width-this.game.config.width)+25, 25, 'Settings', {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get('themePrimaryDark')})
@@ -43,8 +43,8 @@ export default class SettingsScene extends Phaser.Scene {
 
         // ======== MUSIC TOGGLE
         const bgMusic = this.registry.get('bgMusic');
-        const musicToggleTextLabel = this.add.text(this.sceneHeading.x, 100, bgMusic.isPlaying ? 'Music:' : 'Music:', {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get('themePrimaryDark')}).setDepth(2)
-        const musicToggleButton = this.add.text(musicToggleTextLabel.x+musicToggleTextLabel.width+20, musicToggleTextLabel.y, bgMusic.isPlaying ? 'ON' : 'OFF', {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get('themePrimaryDark')}).setInteractive({useHandCursor: true}).setDepth(2)
+        const musicToggleTextLabel = this.add.text(this.sceneHeading.x, 100, 'Music:', {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get('themePrimaryDark')}).setDepth(2)
+        const musicToggleButton = this.add.text(musicToggleTextLabel.x+musicToggleTextLabel.width+20, musicToggleTextLabel.y, bgMusic.isPlaying ? 'ON' : 'OFF', {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get(bgMusic.isPlaying ? 'themeSuccess' : 'themeError')}).setInteractive({useHandCursor: true}).setDepth(2)
         musicToggleButton.on('pointerdown', () => {
             this.soundManager.playClickSound();
             if (bgMusic.isPlaying) {
@@ -137,6 +137,32 @@ export default class SettingsScene extends Phaser.Scene {
                 color: this.colors.get('themeError')
             })
         });
+
+        // ====== SOUND EFFECTS TOGGLE
+        const isSoundEffectsOn = this.gameState.gameSettings.isSoundEffectsOn;
+        const soundEffectsToggleTextLabel = this.add.text(this.sceneHeading.x, 250, 'Sound Effects:', {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get('themePrimaryDark')}).setDepth(2)
+        const soundEffectsToggleButton = this.add.text(soundEffectsToggleTextLabel.x+soundEffectsToggleTextLabel.width+20, soundEffectsToggleTextLabel.y, isSoundEffectsOn ? 'ON' : 'OFF', {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get(isSoundEffectsOn ? 'themeSuccess' : 'themeError')}).setInteractive({useHandCursor: true}).setDepth(2)
+        soundEffectsToggleButton.on('pointerdown', () => {
+            this.soundManager.playClickSound();
+            if (isSoundEffectsOn) {
+                soundEffectsToggleButton.setText('OFF');
+                this.gameState.gameSettings.isSoundEffectsOn = false;
+            } else {
+                soundEffectsToggleButton.setText('ON');
+                this.gameState.gameSettings.isSoundEffectsOn = true;
+            }
+            this.storage.save(this.gameState);
+        });
+        soundEffectsToggleButton.on('pointerover', () => {
+            soundEffectsToggleButton.setStyle({
+                color: this.colors.get('themePrimaryLight')
+            })
+        })
+        soundEffectsToggleButton.on('pointerout', () => {
+            soundEffectsToggleButton.setStyle({
+                color: this.colors.get('themePrimaryDark')
+            })
+        })
     }
 
 
