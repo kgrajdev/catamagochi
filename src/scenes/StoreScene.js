@@ -232,12 +232,9 @@ export default class StoreScene extends Phaser.Scene {
     }
 
     previewItem(itemId = null) {
-        if (itemId.includes("AllCats")) {
-            return;
-        }
         this.previewImageInfo.setAlpha(0);
         this.previewImage.setAlpha(0);
-        if (itemId) {
+        if (itemId && !itemId.includes('AllCats')) {
             this.previewImage.setTexture(itemId).setAlpha(1);
         }
     }

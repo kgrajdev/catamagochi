@@ -2,6 +2,7 @@ import Phaser from  'phaser';
 import ColorScheme from "../lib/ColorScheme";
 import Storage from "../lib/storage";
 import SoundManager from "../objects/sound-manager";
+import SaveExportImport from "../lib/SaveExportImport";
 
 export default class SettingsScene extends Phaser.Scene {
 
@@ -17,6 +18,10 @@ export default class SettingsScene extends Phaser.Scene {
     create(){
         this.add.image(this.game.config.width/2, this.game.config.height/2, 'bgImage').setDepth(1)
         this.soundManager = new SoundManager(this);
+
+        // Create an instance of SaveExportImport.
+        this.saveExportImport = new SaveExportImport(this);
+
         this.gameState = this.storage.load();
 
         // ==== HEADING SECTION
@@ -143,15 +148,26 @@ export default class SettingsScene extends Phaser.Scene {
         const soundEffectsToggleTextLabel = this.add.text(this.sceneHeading.x, 250, 'Sound Effects:', {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get('themePrimaryDark')}).setDepth(2)
         const soundEffectsToggleButton = this.add.text(soundEffectsToggleTextLabel.x+soundEffectsToggleTextLabel.width+20, soundEffectsToggleTextLabel.y, isSoundEffectsOn ? 'ON' : 'OFF', {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get(isSoundEffectsOn ? 'themeSuccess' : 'themeError')}).setInteractive({useHandCursor: true}).setDepth(2)
         soundEffectsToggleButton.on('pointerdown', () => {
-            this.soundManager.playClickSound();
-            if (isSoundEffectsOn) {
-                soundEffectsToggleButton.setText('OFF');
-                this.gameState.gameSettings.isSoundEffectsOn = false;
-            } else {
-                soundEffectsToggleButton.setText('ON');
-                this.gameState.gameSettings.isSoundEffectsOn = true;
-            }
+            // 1) Read current state from gameState
+            const current = this.gameState.gameSettings.isSoundEffectsOn;
+
+            // 2) Flip it
+            const next = !current;
+            this.gameState.gameSettings.isSoundEffectsOn = next;
+
+            // 3) Update the button label
+            soundEffectsToggleButton.setText(next ? 'ON' : 'OFF');
+
+            // 4) Persist immediately
             this.storage.save(this.gameState);
+
+            // 5) Inform your SoundManager (so it’ll actually mute/unmute)
+            this.soundManager.setSoundEffectsEnabled(next);
+
+            // 6) Play a click if sounds are now on
+            if (next) {
+                this.soundManager.playClickSound();
+            }
         });
         soundEffectsToggleButton.on('pointerover', () => {
             soundEffectsToggleButton.setStyle({
@@ -163,7 +179,69 @@ export default class SettingsScene extends Phaser.Scene {
                 color: this.colors.get('themePrimaryDark')
             })
         })
+        
+        // ===== EXPORT-IMPORT SAVE DATA
+        // Create buttons to trigger export/import.
+        const exportImportLabel = this.add.text(this.sceneHeading.x, soundEffectsToggleTextLabel.y+50, 'Save Export/Import:', {
+            fontSize:  '20px',
+            color: this.colors.get('themePrimaryDark'),
+            fontFamily: 'SuperComic'
+        }).setDepth(2);
+        const exportButton = this.add.text(exportImportLabel.x, exportImportLabel.y+30, 'Export',
+            {
+                fontSize:  '23px',
+                color: this.colors.get('themeLight'),
+                backgroundColor: this.colors.get('themeDark'),
+                fontFamily: 'SuperComic',
+                padding: { left: 10, right: 10, top: 5, bottom: 5 }
+            })
+            .setDepth(2)
+            .setInteractive({ useHandCursor: true })
+            .on('pointerdown', () => {
+                this.saveExportImport.showExportModal();
+            })
+            .on('pointerover', () => {
+                exportButton.setStyle({
+                    color: this.colors.get('themePrimaryLight'),
+                    backgroundColor: this.colors.get('themeDark'),
+                });
+            })
+            .on('pointerout', () => {
+                exportButton.setStyle({
+                    backgroundColor: this.colors.get('themeDark'),
+                    color: this.colors.get('themeLight')
+                });
+            });
+        this.importButton = this.add.text(exportButton.x+exportButton.width+10, exportButton.y, 'Import',
+            {
+                fontSize:  '23px',
+                color: this.colors.get('themeLight'),
+                backgroundColor: this.colors.get('themeDark'),
+                fontFamily: 'SuperComic',
+                padding: { left: 10, right: 10, top: 5, bottom: 5 }
+            })
+            .setDepth(2)
+            .setInteractive({ useHandCursor: true })
+            .on('pointerdown', () => {
+                this.saveExportImport.showImportModal();
+            })
+            .on('pointerover', () => {
+                this.importButton.setStyle({
+                    color: this.colors.get('themePrimaryLight'),
+                    backgroundColor: this.colors.get('themeDark'),
+                });
+            })
+            .on('pointerout', () => {
+                this.importButton.setStyle({
+                    backgroundColor: this.colors.get('themeDark'),
+                    color: this.colors.get('themeLight')
+                });
+            });
+        this.exportImportSublabel = this.add.text(exportButton.x, exportButton.y+35, 'You can use this feature to move your game progress between devices, \nand to be able to have a backup.', {
+            fontSize:  '13px',
+            color: this.colors.get('themePrimaryDark'),
+            fontFamily: 'SuperComic'
+        }).setDepth(2);
     }
-
 
 }

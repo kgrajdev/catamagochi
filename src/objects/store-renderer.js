@@ -117,8 +117,8 @@ export default class StoreRenderer {
                     color: this.colors.get('themePrimaryDark')
                 }
             )
-                .setInteractive({ useHandCursor: true })
-                .on('pointerover', () => this.scene.previewItem());
+                // .setInteractive({ useHandCursor: true })
+                // .on('pointerover', () => this.scene.previewItem());
 
 
             const costTxt = this.scene.add.text(

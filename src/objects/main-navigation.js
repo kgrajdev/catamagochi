@@ -69,6 +69,22 @@ export default class MainNavigation {
                     color: this.colors.get('themePrimaryDark')
                 })
             });
+
+        this.aboutButton = this.scene.add.text(this.navAnchor.x + 150, this.navAnchor.y + this.navAnchor.height + 75, 'About', this.navItemStyle).setDepth(2).setInteractive({useHandCursor: true})
+            .on('pointerdown', () => {
+                this.soundManager.playClickSound();
+                this.storage.save(this.gameState);
+                this.scene.scene.start('AboutScene')
+            })
+            .on('pointerover', () => {
+                this.aboutButton.setStyle({
+                    color: this.colors.get('themePrimaryLight')
+                })
+            }).on('pointerout', () => {
+                this.aboutButton.setStyle({
+                    color: this.colors.get('themePrimaryDark')
+                })
+            });
     }
 
 

@@ -38,7 +38,7 @@ export default class MainScene extends Phaser.Scene {
         this.gameState = this.storage.load() || {
             stats: {...DEFAULT_STATS},
             AP: 13,
-            coins: 1110,
+            coins: 25,
             catName: null,
             lastSave: Date.now(),
             lastLogin: null,
@@ -46,7 +46,8 @@ export default class MainScene extends Phaser.Scene {
             gameSettings: {
                 bgMusicVolume: 0.5,
                 isBgMusicOn: true,
-                isSoundEffectsOn: true
+                isSoundEffectsOn: true,
+                welcomeMessageShown: false
             },
             achievementCountTrackers: {
                 feedCount: 0,
@@ -85,9 +86,10 @@ export default class MainScene extends Phaser.Scene {
 
         this.skin = this.gameState.selectedDecor.cat;    // e.g. 'AllCatsGrey'
 
-        if (!this.gameState.catName) {
-            this.showCatNamePrompt()
+        if (!this.gameState.gameSettings.welcomeMessageShown) {
+            this.showWelcomeMessage()
         }
+        
         // ====== ACHIEVEMENTS
         const achievementMgr = new AchievementManager(
             this.gameState,
@@ -285,7 +287,6 @@ export default class MainScene extends Phaser.Scene {
     handleAction(action) {
         const cost = AP_COSTS[action];
         if (this.gameState.AP < cost) {
-            console.log('not enough AP') //todo: add nicer message
             this.notifications.showNotification('Sorry', 'Not Enough Action Points')
             return;
         }
@@ -308,7 +309,8 @@ export default class MainScene extends Phaser.Scene {
         const current = this.gameState.stats[statKey];
 
         if (current >= MAX_STATS[statKey]) {
-            console.log('already full') //todo: add nicer message
+            // console.log('already full')
+            //todo: add nicer message
             return;
         }
 
@@ -324,7 +326,7 @@ export default class MainScene extends Phaser.Scene {
                 this.gameState.stats.water = Math.min(current + 20, MAX_STATS.water);
                 break;
             case 'cleanTray':
-                this.gameState.stats.tray = Math.min(current + 100, MAX_STATS.water);
+                this.gameState.stats.tray = Math.min(current + 100, MAX_STATS.tray);
                 break;
             case 'play':
                 this.gameState.stats.happiness = Math.min(current + 15, MAX_STATS.happiness);
@@ -373,20 +375,22 @@ export default class MainScene extends Phaser.Scene {
     }
 
 
-
+    /**
+     * Animate the cat to-from action location
+     * @param action
+     */
     animateCat(action) {
         if (action === 'cleanTray') return; // do not animate cat to the tray
 
         // ==== location of interactive UI elements
         const targetMap = {
-            fillFood: {x: this.actionButtons['fillFood'].x, y: this.actionButtons['fillFood'].y},
-            fillWater: {x: this.actionButtons['fillWater'].x, y: this.actionButtons['fillWater'].y},
-            play: {x: this.actionButtons['play'].x, y: this.actionButtons['play'].y}
+            fillFood: {x: this.actionButtons['fillFood'].x+15, y: this.actionButtons['fillFood'].y-50},
+            fillWater: {x: this.actionButtons['fillWater'].x+15, y: this.actionButtons['fillWater'].y-50},
+            play: {x: this.actionButtons['play'].x+30, y: this.actionButtons['play'].y-30}
         };
 
         const target = targetMap[action];
         this.catCharacter.play(`running-${this.skin}`);
-
         this.tweens.add({
             targets: this.catCharacter,
             x: target.x,
@@ -396,9 +400,19 @@ export default class MainScene extends Phaser.Scene {
                 this.catCharacter.play(this.getAnimationForAction(action)+'-'+this.skin);
 
                 this.time.delayedCall(2000, () => {
-                    this.catCharacter.play(`idle-${this.skin}`);
-                    this.catCharacter.x = PLAYER_CONFIG.defaultX;
-                    this.catCharacter.y = PLAYER_CONFIG.defaultY;
+
+                    // return to spot
+                    this.catCharacter.play(`running-${this.skin}`);
+                    this.tweens.add({
+                        targets: this.catCharacter,
+                        x: PLAYER_CONFIG.defaultX,
+                        y: PLAYER_CONFIG.defaultY,
+                        duration: 500,
+                        onComplete: () => {
+                            this.catCharacter.play(`idle-${this.skin}`);
+                        }
+                    });
+
                 });
             }
         });
@@ -409,7 +423,7 @@ export default class MainScene extends Phaser.Scene {
             case 'fillFood': return 'happy';
             case 'fillWater': return 'happy';
             case 'cleanTray': return 'happy';
-            case 'play': return 'excited';
+            case 'play': return 'happy';
             default: return 'idle';
         }
     }
@@ -506,6 +520,7 @@ export default class MainScene extends Phaser.Scene {
                 if (diffDays === 1) {
                     // Consecutive login – increase streak.
                     loginStreak++;
+                    // todo: add notification about consecutive login bonus award?
                 } else {
                     // Not consecutive – reset streak.
                     loginStreak = 1;
@@ -527,8 +542,6 @@ export default class MainScene extends Phaser.Scene {
             // Update the UI to show the new AP and coin totals.
             this.updateAPDisplay();
             this.updateCoinsDisplay();
-
-            // todo: add notification about consecutive login bonus award
 
             // Save the updated game state.
             this.storage.save('gameState', this.gameState);
@@ -632,7 +645,40 @@ export default class MainScene extends Phaser.Scene {
     }
 
 
-    showCatNamePrompt() {
-        // console.log('show intro name option')
+    showWelcomeMessage() {
+
+        this.welcomeContainer = this.add.container(this.game.config.width/2, this.game.config.height/2).setDepth(9999);
+
+        const welcomeBg = this.add.rectangle(0, 0, this.game.config.width-180, this.game.config.height-145, this.colors.getHex('themePrimaryDark', 0.5)).setInteractive();
+
+        const welcomeTitle = this.add.text(0, -190, `Welcome to Catamagochi`, {
+                fontFamily: 'SuperComic',
+                fontSize: '22px',
+                color: this.colors.get('themeLight'),
+                align: 'center',
+            }).setOrigin(0.5)
+
+        const welcomeMessage = this.add.text(welcomeBg.width-welcomeBg.width, welcomeTitle.y+welcomeTitle.height+125,
+            `Getting Started:\n\n- You have a fixed number of Action Points (AP) per day. \nUse them wisely to interact with your companion.\n\n- Every day you play you will be awarded with new AP and Coins.\nThe longer the play streak the bigger the awards.\n\n- Spend coins in Store to unlock new decorations, \nand even different kitty skins.`, {
+                fontFamily: 'SuperComic',
+                fontSize: '16px',
+                color: this.colors.get('themeLight'),
+                align: 'left',
+            }).setOrigin(0.5)
+
+        const welcomeButton = this.add.text(0, welcomeMessage.height, 'OK', {
+            fontFamily: 'SuperComic',
+            fontSize: '20px',
+            color: this.colors.get('themeLight'),
+            align: 'center',
+        }).setInteractive({useHandCursor: true})
+            .on('pointerdown', () => {
+                this.gameState.gameSettings.welcomeMessageShown = true;
+                this.storage.save(this.gameState);
+                this.welcomeContainer.destroy();
+            })
+
+
+        this.welcomeContainer.add([welcomeBg, welcomeTitle, welcomeMessage, welcomeButton])
     }
 }
