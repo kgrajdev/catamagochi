@@ -114,7 +114,10 @@ export default class StoreRenderer {
                     fontFamily: 'SuperComic', fontSize: '17px',
                     color: this.colors.get('themePrimaryDark')
                 }
-            );
+            )
+                .setInteractive({ useHandCursor: true })
+                .on('pointerover', () => this.scene.previewItem());
+
 
             const costTxt = this.scene.add.text(
                 nameTxt.x + nameTxt.width + 20, this.yOffset,

@@ -12,6 +12,8 @@ import ColorScheme from "../lib/ColorScheme";
 import MainNavigation from "../objects/main-navigation";
 import SoundManager from "../objects/sound-manager";
 import AchievementManager from "../lib/AchievementManager";
+import {devTestWalkArea} from "../lib/dev-utilities";
+import GameUI from "../objects/game-ui";
 
 export default class MainScene extends Phaser.Scene {
 
@@ -105,11 +107,12 @@ export default class MainScene extends Phaser.Scene {
         // ====== NAVIGATION
         this.mainNav = new MainNavigation(this, this.gameState, this.soundManager);
         this.mainNav.createNavigation();
-        // ======== NAVIGATION END
 
-        // Track stat bars + AP text
-        this.statBars = {};
-        this.drawUI();
+        // ===== UI MANAGEMENT
+        this.ui = new GameUI(this, this.gameState, this.colors);
+        this.ui.drawUI();
+        // Example: wire up AP click to show details
+        this.ui.apText.on("pointerdown", () => this.showAPDetails());
 
         // Start stat decay timer
         this.lastTick = Date.now();
@@ -151,7 +154,7 @@ export default class MainScene extends Phaser.Scene {
             { x: 400, y: 360 }
         ];
         // ===== FOR DEV TESTING ONLY
-        // this.devTestWalkArea(this.walkAreaPoints);
+        // devTestWalkArea(this.walkAreaPoints)
 
         // Build the polygon from those points
         this.walkPolygon = new Phaser.Geom.Polygon(
@@ -231,42 +234,42 @@ export default class MainScene extends Phaser.Scene {
     }
 
 
-    drawUI() {
-        const barX = 50;
-        const barYStart = 200;
-        const barHeight = 20;
-        const barWidth = 150;
-        const spacing = 30;
-
-        Object.keys(this.gameState.stats).forEach((key, index) => {
-            const value = this.gameState.stats[key];
-            const barY = barYStart + index * spacing;
-            const label = this.add.text(barX, barY - 18, key.toUpperCase(), {
-                fontSize: '14px',
-                color: '#ffffff'
-            }).setDepth(2);
-
-            const bar = this.add.graphics().setDepth(2);
-            this.statBars[key] = bar;
-
-            this.updateProgressBar(key, value);
-        });
-
-        this.apText = this.add.text(barX, barYStart + 260, `AP: ${this.gameState.AP}`, {
-            fontSize: '16px',
-            color: '#ffffff'
-        }).setDepth(2).setInteractive({useHandCursor: true})
-        .on('pointerdown', () => {
-            this.showDailyRewardDetails(); // When the AP text is clicked, display current daily rewards.
-        });
-        this.coinText = this.add.text(barX, barYStart + 280, `Coins: ${this.gameState.coins}`, {
-            fontSize: '16px',
-            color: '#ffff00'
-        }).setDepth(2).setInteractive({useHandCursor: true})
-        .on('pointerdown', () => {
-            this.showDailyRewardDetails(); // When the AP text is clicked, display current daily rewards.
-        });
-    }
+    // drawUI() {
+    //     const barX = 50;
+    //     const barYStart = 200;
+    //     const barHeight = 20;
+    //     const barWidth = 150;
+    //     const spacing = 30;
+    //
+    //     Object.keys(this.gameState.stats).forEach((key, index) => {
+    //         const value = this.gameState.stats[key];
+    //         const barY = barYStart + index * spacing;
+    //         const label = this.add.text(barX, barY - 18, key.toUpperCase(), {
+    //             fontSize: '14px',
+    //             color: '#ffffff'
+    //         }).setDepth(2);
+    //
+    //         const bar = this.add.graphics().setDepth(2);
+    //         this.statBars[key] = bar;
+    //
+    //         this.updateProgressBar(key, value);
+    //     });
+    //
+    //     this.apText = this.add.text(barX, barYStart + 260, `AP: ${this.gameState.AP}`, {
+    //         fontSize: '16px',
+    //         color: '#ffffff'
+    //     }).setDepth(2).setInteractive({useHandCursor: true})
+    //     .on('pointerdown', () => {
+    //         this.showDailyRewardDetails(); // When the AP text is clicked, display current daily rewards.
+    //     });
+    //     this.coinText = this.add.text(barX, barYStart + 280, `Coins: ${this.gameState.coins}`, {
+    //         fontSize: '16px',
+    //         color: '#ffff00'
+    //     }).setDepth(2).setInteractive({useHandCursor: true})
+    //     .on('pointerdown', () => {
+    //         this.showDailyRewardDetails(); // When the AP text is clicked, display current daily rewards.
+    //     });
+    // }
 
     // Helper function to update coins display (when coins change)
     updateCoinsDisplay() {
@@ -276,7 +279,7 @@ export default class MainScene extends Phaser.Scene {
     }
 
     // Display a temporary popup with details of today's rewards.
-    showDailyRewardDetails() {
+    showAPDetails() {
         const detailText = `Daily Rewards: \nAction Points: ${DAILY_AWARDS.dailyActionPoints} (unused AP are lost) \nDaily Cash Bonus: ${DAILY_AWARDS.cashBase + ((this.gameState.achievementCountTrackers.loginStreak - 1) * DAILY_AWARDS.cashIncrement)} coins \nLogin Streak: ${this.gameState.achievementCountTrackers.loginStreak} day(s)`;
 
         const popup = this.add.text(400, 100, detailText, {
@@ -312,24 +315,24 @@ export default class MainScene extends Phaser.Scene {
     }
 
 
-    updateProgressBar(key, value) {
-        const bar = this.statBars[key];
-        bar.clear();
-
-        const barX = 50;
-        const barY = 200 + Object.keys(this.statBars).indexOf(key) * 30;
-        const width = 150;
-        const height = 20;
-
-        // Background
-        bar.fillStyle(0x333333);
-        bar.fillRect(barX, barY, width, height);
-
-        // Color by value
-        const colorHex = this.colors.getHex(this.getColorByValue(value));
-        bar.fillStyle(colorHex);
-        bar.fillRect(barX, barY, width * (value / 100), height);
-    }
+    // updateProgressBar(key, value) {
+    //     const bar = this.statBars[key];
+    //     bar.clear();
+    //
+    //     const barX = 50;
+    //     const barY = 200 + Object.keys(this.statBars).indexOf(key) * 30;
+    //     const width = 150;
+    //     const height = 20;
+    //
+    //     // Background
+    //     bar.fillStyle(0x333333);
+    //     bar.fillRect(barX, barY, width, height);
+    //
+    //     // Color by value
+    //     const colorHex = this.colors.getHex(this.getColorByValue(value));
+    //     bar.fillStyle(colorHex);
+    //     bar.fillRect(barX, barY, width * (value / 100), height);
+    // }
 
     getColorByValue(value) {
         const v = Math.floor(value);
@@ -407,17 +410,13 @@ export default class MainScene extends Phaser.Scene {
         const statKey = statKeyMap[action];
         const current = this.gameState.stats[statKey];
 
-console.log(current)
-console.log(MAX_STATS[statKey])
-        //todo: need to have a look at preventing wasting of APs if the stat is already at max
-
         if (current >= MAX_STATS[statKey]) {
             console.log('already full') //todo: add nicer message
             return;
         }
 
         this.gameState.AP -= cost;
-        this.apText.setText(`AP: ${this.gameState.AP}`);
+        this.ui.updateAP();
 
         // Apply action
         switch (action) {
@@ -455,12 +454,13 @@ console.log(MAX_STATS[statKey])
         this.updateActionButtonTextures();
 
         // Update UI
-        this.updateProgressBar(statKey, this.gameState.stats[statKey]);
+        // this.updateProgressBar(statKey, this.gameState.stats[statKey]);
         // save
         this.storage.save(this.gameState);
     }
 
     updateActionButtonTextures() {
+        // todo: REWORK HOW INTERACTIVE ACTION BUTTONS LOOK LIKE
         if (this.actionButtons) {
             // Food button:
             const foodFull = this.gameState.stats.food >= MAX_STATS.food;
@@ -496,7 +496,7 @@ console.log(MAX_STATS[statKey])
         const targetMap = {
             fillFood: {x: this.actionButtons['fillFood'].x, y: this.actionButtons['fillFood'].y},
             fillWater: {x: this.actionButtons['fillWater'].x, y: this.actionButtons['fillWater'].y},
-            // play: {x: this.playIcon.x, y: this.playIcon.y}
+            play: {x: this.actionButtons['play'].x, y: this.actionButtons['play'].y}
         };
 
         const target = targetMap[action];
@@ -541,16 +541,22 @@ console.log(MAX_STATS[statKey])
         if (elapsedSeconds >= 1) {
             this.lastTick = now;
 
-            ['food', 'water', 'tray'].forEach(stat => {
-                const rate = DECAY_RATES[stat];
-                this.gameState.stats[stat] = Math.max(0, this.gameState.stats[stat] - rate);
-                this.updateProgressBar(stat, this.gameState.stats[stat]);
+            ["food", "water", "tray"].forEach(stat => {
+                this.gameState.stats[stat] = Math.max(
+                    0,
+                    this.gameState.stats[stat] - DECAY_RATES[stat]
+                );
+                this.ui.updateStat(stat, this.gameState.stats[stat]);
             });
 
             // Recalculate happiness
-            const avg = (this.gameState.stats.food + this.gameState.stats.water + this.gameState.stats.tray) / 3;
+            const avg = (
+                this.gameState.stats.food +
+                this.gameState.stats.water +
+                this.gameState.stats.tray
+            ) / 3;
             this.gameState.stats.happiness = avg;
-            this.updateProgressBar('happiness', avg);
+            this.ui.updateStat("happiness", avg);
         }
     }
 
@@ -706,29 +712,7 @@ console.log(MAX_STATS[statKey])
     }
 
 
-
-
     showCatNamePrompt() {
         // console.log('show intro name option')
-    }
-
-    devTestWalkArea(walkAreaPoints) {
-        walkAreaPoints.forEach((corner, idx) => {
-            this.add.text(corner.x, corner.y, ''+idx, {color: '#ff1111'}).setDepth(9999);
-        })
-        const graphics = this.add.graphics();
-        graphics.lineStyle(2, 0xff0000, 1); // (thickness, color, alpha)
-
-        // Draw the 4 lines using moveTo and lineTo
-        graphics.beginPath();
-
-        for (let i = 0; i < walkAreaPoints.length; i++) {
-            const start = walkAreaPoints[i];
-            const end = walkAreaPoints[(i + 1) % walkAreaPoints.length]; // loops back to 0 at the end
-
-            graphics.moveTo(start.x, start.y);
-            graphics.lineTo(end.x, end.y);
-        }
-        graphics.strokePath().setDepth(9999);
     }
 }

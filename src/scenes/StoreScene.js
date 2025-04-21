@@ -84,6 +84,9 @@ export default class StoreScene extends Phaser.Scene {
             this.gameState.coins,
             { fontFamily: 'SuperComic', fontSize: '20px', color: this.colors.get('themePrimaryDark') }
         ).setDepth(2);
+        this.coinsIcon = this.add.image(this.coinsValue.x+this.coinsValue.width+15, this.coinsValue.y+10, 'coin')
+            .setScale(0.05)
+            .setDepth(2);
 
         // preview
         this.previewImageInfo = this.add.text(
@@ -221,9 +224,12 @@ export default class StoreScene extends Phaser.Scene {
         this.storeRender.updateCategory(category);
     }
 
-    previewItem(itemId) {
+    previewItem(itemId = null) {
         this.previewImageInfo.setAlpha(0);
-        this.previewImage.setTexture(itemId).setAlpha(1);
+        this.previewImage.setAlpha(0);
+        if (itemId) {
+            this.previewImage.setTexture(itemId).setAlpha(1);
+        }
     }
 
     showAchievementToastIfAny() {
