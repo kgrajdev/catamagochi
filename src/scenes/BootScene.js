@@ -6,16 +6,18 @@ import {
     AP_COSTS,
     DECAY_RATES,
     PLAYER_CONFIG,
-    DECOR_CATALOG
+    DECOR_CATALOG, RANDOM_IDLE_BEHAVIORS
 } from "../lib/default-properties";
 import ColorScheme from "../lib/ColorScheme";
 import SoundManager from "../objects/sound-manager";
+import Storage from "../lib/storage";
 
 export default class BootScene extends Phaser.Scene {
 
     constructor() {
         super({key: 'BootScene'});
         this.colors = new ColorScheme();
+        this.storage = new Storage();
     }
 
     preload() {
@@ -106,12 +108,12 @@ export default class BootScene extends Phaser.Scene {
         // check for save data
         this.checkForSaveData(this.startButton);
         this.catAnimations = new CatAnimations(this);
+        this.addBootCat(this.storage.load())
     }
 
     checkForSaveData(startButton) {
         try {
-            const saved = localStorage.getItem('catamagochi_game_state');
-            if (saved) {
+            if (this.storage.load()) {
                 startButton.setText('Resume')
             } else {
                 startButton.setText('Start New Game')
@@ -119,5 +121,41 @@ export default class BootScene extends Phaser.Scene {
         } catch (e) {
             console.error('Error loading game data:', e);
         }
+    }
+
+    addBootCat(isNewGame) {
+        this.catCharacter = this.add.sprite(this.game.config.width-this.game.config.width-50, this.game.config.height/1.25, 'cat-tiles-master').setScale(1.1).setDepth(1001);
+        this.catCharacter.play('running');
+
+        if (isNewGame) {
+            const distance = Math.hypot(this.game.config.width-this.game.config.width-50, this.game.config.width/2);
+            const speed = 100; // px/sec
+            const duration = (distance / speed) * 750;
+            this.tweens.add({
+                targets: this.catCharacter,
+                x: this.game.config.width/2,
+                y: this.game.config.height/1.25,
+                duration,
+                ease: 'Linear',
+                onComplete: () => {
+                    this.catCharacter.play('sleeping')
+                }
+            });
+        } else {
+            const distance = Math.hypot(this.game.config.width-this.game.config.width-50, this.game.config.width+50);
+            const speed = 100; // px/sec
+            const duration = (distance / speed) * 750;
+            this.tweens.add({
+                targets: this.catCharacter,
+                x: this.game.config.width+50,
+                y: this.game.config.height/1.25,
+                duration,
+                ease: 'Linear',
+                onComplete: () => {
+                    this.catCharacter.setVisible(false)
+                }
+            });
+        }
+
     }
 }

@@ -6,7 +6,8 @@ import {
     DECAY_RATES,
     PLAYER_CONFIG,
     DAILY_AWARDS,
-    RANDOM_IDLE_BEHAVIORS
+    RANDOM_IDLE_BEHAVIORS,
+    ACTION_BUTTON_CONFIG, ACTION_DESCRIPTIONS
 } from "../lib/default-properties"
 import ColorScheme from "../lib/ColorScheme";
 import MainNavigation from "../objects/main-navigation";
@@ -14,6 +15,8 @@ import SoundManager from "../objects/sound-manager";
 import AchievementManager from "../lib/AchievementManager";
 import {devTestWalkArea} from "../lib/dev-utilities";
 import GameUI from "../objects/game-ui";
+import NotificationManager from "../lib/notificationManager";
+import TooltipManager from "../lib/tooltipManager";
 
 export default class MainScene extends Phaser.Scene {
 
@@ -21,6 +24,7 @@ export default class MainScene extends Phaser.Scene {
         super({ key: 'MainScene' });
         this.storage = new Storage();
         this.colors = new ColorScheme();
+        this.notifications = new NotificationManager(this);
         this.actionButtons = this.actionButtons || {};
     }
 
@@ -133,12 +137,7 @@ export default class MainScene extends Phaser.Scene {
         }
 
         // ===== INTERACTION UI
-        // Create action buttons for food, water, tray, and play.
-        // Adjust x, y values as needed.
-        this.createActionButton('fillFood', 405, 420);
-        this.createActionButton('fillWater', 450, 445);
-        this.createActionButton('cleanTray', 290, 365);
-        this.createActionButton('play', 365, 375);
+        this.createActionButton();
 
         // Save on page exit
         window.addEventListener('beforeunload', () => {
@@ -195,6 +194,8 @@ export default class MainScene extends Phaser.Scene {
         ];
         this.playRandomBackgroundMeowSounds();
 
+        // ======= INSTANTIATE TOOLTIPS
+        this.tooltip = new TooltipManager(this);
     }
 
     // show a floating toast
@@ -345,51 +346,41 @@ export default class MainScene extends Phaser.Scene {
 
 
     /**
-     * Creates an interactive action button.
-     * @param {string} action - The action identifier (e.g., "fillFood", "fillWater", "cleanTray", "play").
-     * @param {number} x - X coordinate for the button.
-     * @param {number} y - Y coordinate for the button.
+     * Creates an interactive action buttons.
      */
-    createActionButton(action, x, y) {
-        let textureKey;
-        switch (action) {
-            case 'fillFood':
-                textureKey = (this.gameState.stats.food >= MAX_STATS.food) ? 'bowl-food-full' : 'bowl-empty';
-                break;
-            case 'fillWater':
-                textureKey = (this.gameState.stats.water >= MAX_STATS.water) ? 'bowl-water-full' : 'bowl-empty';
-                break;
-            case 'cleanTray':
-                textureKey = (this.gameState.stats.tray >= MAX_STATS.tray) ? 'litter-tray-clean' : 'litter-tray-dirty';
-                break;
-            case 'play':
-                // For play, you might use a specific sprite from a spritesheet:
-                textureKey = 'cat-toy-sprite';
-                break;
-            default:
-                textureKey = 'default'; // Fallback texture if needed.
-        }
+    createActionButton() {
+        this.actionButtons = {};
 
-        const button = this.add.image(x, y, textureKey).setInteractive({useHandCursor: true}).setDepth(9999);
-        // Add hover effect (e.g., slight scale up)
-        button.on('pointerover', () => button.setScale(1.05));
-        button.on('pointerout', () => button.setScale(1));
+        Object.entries(ACTION_BUTTON_CONFIG).forEach(([action, cfg], i) => {
 
-        // Bind the pointerdown event to execute the action:
-        button.on('pointerdown', () => {
-            this.handleAction(action);
+            // Bottom: empty state
+            const emptyImg = this.add.image(cfg.x, cfg.y, cfg.emptyKey).setInteractive({ useHandCursor: true }).setDepth(999);
+            // Top: full state
+            const fullImg  = this.add.image(cfg.x, cfg.y, cfg.fullKey).setInteractive({ useHandCursor: true }).setDepth(999);
+
+            // Make clicks go through either image
+            emptyImg.on('pointerdown', () => this.handleAction(action));
+            fullImg.on('pointerdown', () => this.handleAction(action));
+
+            let actionButtonImages = [emptyImg, fullImg];
+            actionButtonImages.forEach((btnImage) => {
+                btnImage.on('pointerover', () => {
+                    this.tooltip.show(`${ACTION_DESCRIPTIONS[action]}, ${AP_COSTS[action]} Action Points`);
+                })
+                btnImage.on('pointerout', () => {
+                    this.tooltip.hide();
+                })
+            })
+
+            this.actionButtons[action] = { emptyImg, fullImg, ...cfg };
         });
-
-        // Store the button reference for later texture updates
-        this.actionButtons[action] = button;
-
-        return button;
     }
 
     handleAction(action) {
         const cost = AP_COSTS[action];
         if (this.gameState.AP < cost) {
             console.log('not enough AP') //todo: add nicer message
+            this.notifications.showNotification('Sorry', 'Not Enough Action Points')
             return;
         }
         // play sound
@@ -460,31 +451,19 @@ export default class MainScene extends Phaser.Scene {
     }
 
     updateActionButtonTextures() {
-        // todo: REWORK HOW INTERACTIVE ACTION BUTTONS LOOK LIKE
-        if (this.actionButtons) {
-            // Food button:
-            const foodFull = this.gameState.stats.food >= MAX_STATS.food;
-            const foodTexture = foodFull ? 'bowl-food-full' : 'bowl-empty';
-            this.actionButtons['fillFood'].setTexture(foodTexture);
-            this.actionButtons['fillFood'].setDepth(9999);
-            this.actionButtons['fillFood'].setAlpha(foodFull ? 0.6 : 1); // gray out if full
 
-            // Water button:
-            const waterFull = this.gameState.stats.water >= MAX_STATS.water;
-            const waterTexture = waterFull ? 'bowl-water-full' : 'bowl-empty';
-            this.actionButtons['fillWater'].setTexture(waterTexture);
-            this.actionButtons['fillWater'].setDepth(9999);
-            this.actionButtons['fillWater'].setAlpha(waterFull ? 0.6 : 1);
+        Object.values(this.actionButtons).forEach(cfg => {
+            const { statKey, lowThresh, highThresh, fullImg } = cfg;
+            const val = this.gameState.stats[statKey];
 
-            // Litter tray:
-            const trayClean = this.gameState.stats.tray >= MAX_STATS.tray;
-            const trayTexture = trayClean ? 'litter-tray-clean' : 'litter-tray-dirty';
-            this.actionButtons['cleanTray'].setTexture(trayTexture);
-            this.actionButtons['cleanTray'].setDepth(9999);
-            this.actionButtons['cleanTray'].setAlpha(trayClean ? 0.6 : 1);
+            // compute alpha: 1 at highThresh, 0 at lowThresh, clamp
+            let alpha = (val - lowThresh) / (highThresh - lowThresh);
+            alpha = Phaser.Math.Clamp(alpha, 0, 1);
 
-            // For 'play', you might always show the same sprite, or update it if you want to change states.
-        }
+            fullImg.setAlpha(alpha);
+            fullImg.setDepth(999);  // keep it on top
+        });
+
     }
 
 
@@ -557,6 +536,8 @@ export default class MainScene extends Phaser.Scene {
             ) / 3;
             this.gameState.stats.happiness = avg;
             this.ui.updateStat("happiness", avg);
+
+            this.updateActionButtonTextures()
         }
     }
 
