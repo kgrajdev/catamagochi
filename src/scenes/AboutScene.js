@@ -24,7 +24,7 @@ export default class AboutScene extends Phaser.Scene {
         this.returnButton = this.add.text(this.game.config.width-150, this.sceneHeading.y, 'Return', {fontFamily: 'SuperComic', align: 'center', fontSize: '20px', color: this.colors.get('themePrimaryDark')}).setInteractive({useHandCursor: true}).setDepth(2)
             .on('pointerdown', () => {
                 this.soundManager.playClickSound();
-                this.scene.start('BootScene')
+                this.scene.start('MainScene')
             }).on('pointerover', () => {
                 this.returnButton.setStyle({
                     color: this.colors.get('themePrimaryLight')

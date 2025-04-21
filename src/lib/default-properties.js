@@ -74,8 +74,8 @@ export const DECOR_CATALOG = {
         { id: "apPack3", name: "50 Action Points Pack", points: 50, price: 500 }
     ],
     cat: [
-        { id: "AllCatsBlack", name: "Black Cat", price: 100 },
-        { id: "AllCatsGrey", name: "Grey Cat", price: 300 },
+        { id: "AllCatsBlack", name: "Black Cat", price: 10 },
+        { id: "AllCatsGrey", name: "Grey Cat", price: 500 },
         { id: "AllCatsOrange", name: "Orange Cat", price: 500 },
         { id: "AllCatsWhite", name: "White Cat", price: 500 },
         { id: "AllCatsGreyWhite", name: "Grey White Cat", price: 500 },
@@ -156,7 +156,7 @@ export const ACTION_BUTTON_CONFIG = {
         statKey:    'tray',
         emptyKey:   'litter-tray-dirty',
         fullKey:    'litter-tray-clean',
-        lowThresh:  COLOR_THRESHOLDS.green.min,
+        lowThresh:  COLOR_THRESHOLDS.red.min,
         highThresh: MAX_STATS.tray
     },
     play: {
