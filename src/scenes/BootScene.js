@@ -32,10 +32,13 @@ export default class BootScene extends Phaser.Scene {
             });
         });
 
+        // Load all cat sprite-sheets
+        Object.entries(DECOR_CATALOG.cat).forEach(item => {
+            this.load.spritesheet(`cat-tiles-${item[1].id}`, `assets/room-decor/cat/${item[1].id}.png`, { frameWidth: 64, frameHeight: 64 });
+        });
+
         this.load.image('coin', 'assets/ui/coin.png');
         this.load.image('decor-holder', 'assets/room-decor/bed/bed0.png');
-
-        this.load.spritesheet('cat-tiles-master', 'assets/AllCatsBlack.png', { frameWidth: 64, frameHeight: 64 });
 
         this.load.image('cat-medicine', 'assets/cat-medicine.png');
 
@@ -74,7 +77,7 @@ export default class BootScene extends Phaser.Scene {
             .setInteractive({useHandCursor: true})
             .setDepth(1000)
             .on('pointerdown', () => {
-                this.soundManager.playClickSound();
+                this.soundManager.playRandomMeowSound();
                 this.scene.start('MainScene')
             })
             .on('pointerover', () => {
@@ -124,8 +127,9 @@ export default class BootScene extends Phaser.Scene {
     }
 
     addBootCat(isNewGame) {
-        this.catCharacter = this.add.sprite(this.game.config.width-this.game.config.width-50, this.game.config.height/1.25, 'cat-tiles-master').setScale(1.1).setDepth(1001);
-        this.catCharacter.play('running');
+
+        this.catCharacter = this.add.sprite(this.game.config.width-this.game.config.width-50, this.game.config.height/1.25, 'cat-tiles-AllCatsBlack').setScale(1.1).setDepth(1001);
+        this.catCharacter.play('running-AllCatsBlack');
 
         if (isNewGame) {
             const distance = Math.hypot(this.game.config.width-this.game.config.width-50, this.game.config.width/2);
@@ -138,7 +142,7 @@ export default class BootScene extends Phaser.Scene {
                 duration,
                 ease: 'Linear',
                 onComplete: () => {
-                    this.catCharacter.play('sleeping')
+                    this.catCharacter.play('sleeping-AllCatsBlack')
                 }
             });
         } else {

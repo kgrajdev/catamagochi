@@ -23,6 +23,8 @@ export default class StoreRenderer {
             shelf:        { arrayName: 'shelvesContainer',      x: 350, y: 130 },
             tree:         { arrayName: 'treesContainer',        x: 25,  y: 400 },
 
+            cat:          { arrayName: 'catsContainer',         x: 25,   y: 130 },
+
             actionPoints: { arrayName: 'actionPointsContainer', x: 0,   y: -1040 }
         };
     }

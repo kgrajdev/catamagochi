@@ -4,12 +4,15 @@ import ColorScheme from "../lib/ColorScheme";
 import StoreRenderer from "../objects/store-renderer";
 import SoundManager from "../objects/sound-manager";
 import { ACHIEVEMENT_DEFS } from '../lib/achievements';
+import NotificationManager from "../lib/notificationManager";
 
 export default class StoreScene extends Phaser.Scene {
     constructor() {
         super({ key: 'StoreScene' });
         this.gameStorage = new Storage();
         this.colors = new ColorScheme();
+        this.notifications = new NotificationManager(this);
+
         // containers for each category
         this.backgroundsContainer   = [];
         this.windowsLContainer      = [];
@@ -20,6 +23,7 @@ export default class StoreScene extends Phaser.Scene {
         this.platformsContainer     = [];
         this.shelvesContainer       = [];
         this.treesContainer         = [];
+        this.catsContainer         = [];
         this.actionPointsContainer  = [];
     }
 
@@ -29,7 +33,7 @@ export default class StoreScene extends Phaser.Scene {
         this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'bgImage').setDepth(1);
 
         // load state
-        this.gameState = this.gameStorage.load('gameState');
+        this.gameState = this.gameStorage.load();
 
         // achievements
         this.achMgr = this.registry.get('achMgr');
@@ -120,6 +124,7 @@ export default class StoreScene extends Phaser.Scene {
             { key: 'wallDecor', label: 'Wall Decor',containers: ['wallDecorsContainer'] },
             { key: 'plant',     label: 'Plants',    containers: ['plantsContainer'] },
             { key: 'furniture', label: 'Furniture', containers: ['bedsContainer','platformsContainer','shelvesContainer','treesContainer'] },
+            { key: 'cats', label: 'Cat', containers: ['catsContainer'] },
             { key: 'gameplay',  label: 'Gameplay',  containers: ['actionPointsContainer'] },
         ];
 
@@ -157,6 +162,7 @@ export default class StoreScene extends Phaser.Scene {
         this.storeRender.renderCategory('platform',   this.platformsContainer);
         this.storeRender.renderCategory('shelf',      this.shelvesContainer);
         this.storeRender.renderCategory('tree',       this.treesContainer);
+        this.storeRender.renderCategory('cat',       this.catsContainer);
         this.storeRender.renderStoreGameplaySection('actionPoints', this.actionPointsContainer);
 
 
@@ -184,8 +190,9 @@ export default class StoreScene extends Phaser.Scene {
     }
 
     purchaseItem(category, item) {
+
         if (this.gameState.coins < item.price) {
-            console.log('not enough coins'); //todo: add nicer message
+            this.notifications.showNotification('Sorry', 'Not Enough Coins');
             return;
         }
 
@@ -208,7 +215,7 @@ export default class StoreScene extends Phaser.Scene {
 
     purchaseAP(pack) {
         if (this.gameState.coins < pack.price) {
-            console.log('not enough coins'); //todo: add nicer message
+            this.notifications.showNotification('Sorry', 'Not Enough Coins');
             return;
         }
         this.gameState.coins -= pack.price;
@@ -225,6 +232,9 @@ export default class StoreScene extends Phaser.Scene {
     }
 
     previewItem(itemId = null) {
+        if (itemId.includes("AllCats")) {
+            return;
+        }
         this.previewImageInfo.setAlpha(0);
         this.previewImage.setAlpha(0);
         if (itemId) {
@@ -232,65 +242,8 @@ export default class StoreScene extends Phaser.Scene {
         }
     }
 
-    showAchievementToastIfAny() {
-
-        const newly = this.achMgr
-            .gameState.unlockedAchievements
-            .filter(id => !this.achMgr.gameState.claimedAchievements.includes(id));
-
-        newly.forEach(id => {
-            const def = ACHIEVEMENT_DEFS.find(d => d.id === id);
-            const msg = this.add.text(
-                this.cameras.main.centerX,
-                this.cameras.main.height - 100,
-                `🏆 Achievement Unlocked:\n${def.desc}!`,
-                {
-                    fontFamily: 'SuperComic',
-                    fontSize: '19px',
-                    color: this.colors.get('themePrimaryLight'),
-                    align: 'center',
-                    backgroundColor: this.colors.get('themePrimaryDark'),
-                    padding: { x: 15, y: 7 }
-                }
-            )
-                .setOrigin(0.5)
-                .setDepth(1000);
-
-            this.tweens.add({
-                targets: msg,
-                alpha: { from: 1, to: 0 },
-                ease: 'Linear',
-                duration: 850,
-                delay: 2500,
-                onComplete: () => msg.destroy()
-            });
-        });
-    }
-
     onAchievementUnlocked(def) {
-        // your toast code here
         this.soundManager.playAchievementSound();
-        const msg = this.add.text(
-            this.cameras.main.centerX,
-            this.cameras.main.height - 100,
-            `🏆 Achievement Unlocked:\n${def.desc}!`,
-            {
-                fontFamily: 'SuperComic',
-                fontSize: '19px',
-                color: this.colors.get('themePrimaryLight'),
-                align: 'center',
-                backgroundColor: this.colors.get('themePrimaryDark'),
-                padding: { x: 15, y: 7 }
-            }
-        ).setOrigin(0.5).setDepth(1000);
-
-        this.tweens.add({
-            targets: msg,
-            alpha: { from: 1, to: 0 },
-            ease: 'Linear',
-            duration: 850,
-            delay: 2500,
-            onComplete: () => msg.destroy()
-        });
+        this.notifications.showNotification('Achievement Unlocked', `${def.desc}`);
     }
 }

@@ -72,6 +72,14 @@ export const DECOR_CATALOG = {
         { id: "apPack1", name: "10 Action Points Pack", points: 10, price: 100 },
         { id: "apPack2", name: "30 Action Points Pack", points: 30, price: 300 },
         { id: "apPack3", name: "50 Action Points Pack", points: 50, price: 500 }
+    ],
+    cat: [
+        { id: "AllCatsBlack", name: "Black Cat", price: 100 },
+        { id: "AllCatsGrey", name: "Grey Cat", price: 300 },
+        { id: "AllCatsOrange", name: "Orange Cat", price: 500 },
+        { id: "AllCatsWhite", name: "White Cat", price: 500 },
+        { id: "AllCatsGreyWhite", name: "Grey White Cat", price: 500 },
+        { id: "AllCatsCream", name: "Cream Cat", price: 500 }
     ]
 };
 

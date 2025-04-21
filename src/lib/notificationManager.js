@@ -6,14 +6,14 @@ export default class NotificationManager  {
         this.colors = new ColorScheme();
     }
 
-    showNotification(messageTitle, messageContent) {
+    showNotification(messageTitle, messageContent, displayTime = 500, align = 'center') {
         const notificationMessage = this.scene.add.text(this.scene.game.config.width/2, this.scene.game.config.height-75,
             `${messageTitle}
              \n${messageContent}`, {
                 fontFamily: 'SuperComic',
                 fontSize: '14px',
                 color: this.colors.get('themePrimaryLight'),
-                align: 'center',
+                align: align,
                 backgroundColor: this.colors.get('themePrimaryDark'),
                 padding: { x: 15, y: 7 }
             })
@@ -26,7 +26,7 @@ export default class NotificationManager  {
             alpha: { from: 1, to: 0 },
             ease: 'Linear',
             duration: 500,
-            delay: 500,
+            delay: displayTime,
             onComplete: () => notificationMessage.destroy()
         });
     }

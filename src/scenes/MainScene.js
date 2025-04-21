@@ -7,7 +7,7 @@ import {
     PLAYER_CONFIG,
     DAILY_AWARDS,
     RANDOM_IDLE_BEHAVIORS,
-    ACTION_BUTTON_CONFIG, ACTION_DESCRIPTIONS
+    ACTION_BUTTON_CONFIG, ACTION_DESCRIPTIONS, COLOR_THRESHOLDS
 } from "../lib/default-properties"
 import ColorScheme from "../lib/ColorScheme";
 import MainNavigation from "../objects/main-navigation";
@@ -26,6 +26,7 @@ export default class MainScene extends Phaser.Scene {
         this.colors = new ColorScheme();
         this.notifications = new NotificationManager(this);
         this.actionButtons = this.actionButtons || {};
+        this.skin = null;
     }
 
 
@@ -34,17 +35,18 @@ export default class MainScene extends Phaser.Scene {
         this.add.image(this.game.config.width/2, this.game.config.height/1.05, 'bgBuildingImage').setDepth(1)
 
         // Load game state either from localStorage or from Defaults
-        this.gameState = this.storage.load('gameState') || {
+        this.gameState = this.storage.load() || {
             stats: {...DEFAULT_STATS},
             AP: 13,
-            coins: 0,
+            coins: 1110,
             catName: null,
             lastSave: Date.now(),
             lastLogin: null,
             selectedStoreTab: null,
             gameSettings: {
                 bgMusicVolume: 0.5,
-                isBgMusicOn: true
+                isBgMusicOn: true,
+                isSoundEffectsOn: true
             },
             achievementCountTrackers: {
                 feedCount: 0,
@@ -65,6 +67,7 @@ export default class MainScene extends Phaser.Scene {
                 platform: [],
                 shelf: [],
                 tree: [],
+                cat: ["AllCatsBlack"],
             },
             selectedDecor: {
                 bed: "",
@@ -75,9 +78,12 @@ export default class MainScene extends Phaser.Scene {
                 plant: "",
                 platform: "",
                 shelf: "",
-                tree: ""
+                tree: "",
+                cat: "AllCatsBlack"
             }
         };
+
+        this.skin = this.gameState.selectedDecor.cat;    // e.g. 'AllCatsGrey'
 
         if (!this.gameState.catName) {
             this.showCatNamePrompt()
@@ -125,15 +131,18 @@ export default class MainScene extends Phaser.Scene {
         this.renderDecor();
 
         // ====== CAT SPRITE
-        this.catCharacter = this.add.sprite(PLAYER_CONFIG.defaultX, PLAYER_CONFIG.defaultY, 'cat-tiles-master').setScale(1.1).setDepth(1001);
+        this.catCharacter = this.add.sprite(PLAYER_CONFIG.defaultX, PLAYER_CONFIG.defaultY, `cat-tiles-${this.skin}`).setScale(1.1).setDepth(1001);
+        this.catCharacter.play(`idle-${this.skin}`);
+
+
         // Choose one of the random idle behaviors
         let behavior = Phaser.Utils.Array.GetRandom(RANDOM_IDLE_BEHAVIORS);
         if (behavior.key === 'sleeping') {
-            this.catCharacter.play('sleeping');
+            this.catCharacter.play(`idle-${this.skin}`);
         } else if (behavior.key === 'chill') {
-            this.catCharacter.play('chill');
+            this.catCharacter.play(`idle-${this.skin}`);
         } else {
-            this.catCharacter.play('idle');
+            this.catCharacter.play(`idle-${this.skin}`);
         }
 
         // ===== INTERACTION UI
@@ -173,25 +182,8 @@ export default class MainScene extends Phaser.Scene {
             }
             this.registry.set('bgMusic', this.bgMusic); // store in registry for access from other scenes
         }
-        // Store ambient sounds in an array
-        this.randomBackgroundMeowSounds = [
-            this.sound.add('random-bg-meow-1', {
-                loop: false,
-                volume: 1
-            }),
-            this.sound.add('random-bg-meow-3', {
-                loop: false,
-                volume: 1
-            }),
-            this.sound.add('random-bg-meow-4', {
-                loop: false,
-                volume: 1
-            }),
-            this.sound.add('random-bg-meow-5', {
-                loop: false,
-                volume: 1
-            }),
-        ];
+
+        // initial trigger to play sound
         this.playRandomBackgroundMeowSounds();
 
         // ======= INSTANTIATE TOOLTIPS
@@ -201,76 +193,18 @@ export default class MainScene extends Phaser.Scene {
     // show a floating toast
     onAchievementUnlocked(def) {
         this.soundManager.playAchievementSound();
-        const msg = this.add.text(this.game.config.width/2, this.game.config.height-100,
-            `🏆 Achievement Unlocked:\n${def.desc}!`, {
-                fontFamily: 'SuperComic',
-                fontSize: '19px',
-                color: this.colors.get('themePrimaryLight'),
-                align: 'center',
-                backgroundColor: this.colors.get('themePrimaryDark'),
-                padding: { x: 15, y: 7 }
-            })
-            .setOrigin(0.5)
-            .setDepth(1000);
-
-        // fade out & destroy after 3s
-        this.tweens.add({
-            targets: msg,
-            alpha: { from: 1, to: 0 },
-            ease: 'Linear',
-            duration: 850,
-            delay: 2500,
-            onComplete: () => msg.destroy()
-        });
+        this.notifications.showNotification('Achievement Unlocked', `${def.desc}`)
     }
 
     playRandomBackgroundMeowSounds() {
         // Play a random sound
-        const randomMeowSound = Phaser.Utils.Array.GetRandom(this.randomBackgroundMeowSounds);
-        randomMeowSound.play();
+        this.soundManager.playRandomMeowSound();
         // Set the next random interval (e.g., between 9–20 seconds)
         const delay = Phaser.Math.Between(9000, 20000);
         // Use a delayed call to play the next one
         this.time.delayedCall(delay, () => this.playRandomBackgroundMeowSounds(), null, this);
     }
 
-
-    // drawUI() {
-    //     const barX = 50;
-    //     const barYStart = 200;
-    //     const barHeight = 20;
-    //     const barWidth = 150;
-    //     const spacing = 30;
-    //
-    //     Object.keys(this.gameState.stats).forEach((key, index) => {
-    //         const value = this.gameState.stats[key];
-    //         const barY = barYStart + index * spacing;
-    //         const label = this.add.text(barX, barY - 18, key.toUpperCase(), {
-    //             fontSize: '14px',
-    //             color: '#ffffff'
-    //         }).setDepth(2);
-    //
-    //         const bar = this.add.graphics().setDepth(2);
-    //         this.statBars[key] = bar;
-    //
-    //         this.updateProgressBar(key, value);
-    //     });
-    //
-    //     this.apText = this.add.text(barX, barYStart + 260, `AP: ${this.gameState.AP}`, {
-    //         fontSize: '16px',
-    //         color: '#ffffff'
-    //     }).setDepth(2).setInteractive({useHandCursor: true})
-    //     .on('pointerdown', () => {
-    //         this.showDailyRewardDetails(); // When the AP text is clicked, display current daily rewards.
-    //     });
-    //     this.coinText = this.add.text(barX, barYStart + 280, `Coins: ${this.gameState.coins}`, {
-    //         fontSize: '16px',
-    //         color: '#ffff00'
-    //     }).setDepth(2).setInteractive({useHandCursor: true})
-    //     .on('pointerdown', () => {
-    //         this.showDailyRewardDetails(); // When the AP text is clicked, display current daily rewards.
-    //     });
-    // }
 
     // Helper function to update coins display (when coins change)
     updateCoinsDisplay() {
@@ -281,16 +215,7 @@ export default class MainScene extends Phaser.Scene {
 
     // Display a temporary popup with details of today's rewards.
     showAPDetails() {
-        const detailText = `Daily Rewards: \nAction Points: ${DAILY_AWARDS.dailyActionPoints} (unused AP are lost) \nDaily Cash Bonus: ${DAILY_AWARDS.cashBase + ((this.gameState.achievementCountTrackers.loginStreak - 1) * DAILY_AWARDS.cashIncrement)} coins \nLogin Streak: ${this.gameState.achievementCountTrackers.loginStreak} day(s)`;
-
-        const popup = this.add.text(400, 100, detailText, {
-            fontSize: '18px',
-            color: '#00ff00',
-            backgroundColor: '#000000',
-            align: 'center'
-        }).setOrigin(0.5).setDepth(1000);
-
-        this.time.delayedCall(4000, () => popup.destroy());
+        this.notifications.showNotification('Daily Reward', `AP: ${DAILY_AWARDS.dailyActionPoints}\nCoins: ${DAILY_AWARDS.cashBase + ((this.gameState.achievementCountTrackers.loginStreak - 1) * DAILY_AWARDS.cashIncrement)}\nCurrent Day-Streak: ${this.gameState.achievementCountTrackers.loginStreak}`, 1250, 'left')
     }
 
     renderDecor() {
@@ -315,25 +240,6 @@ export default class MainScene extends Phaser.Scene {
         });
     }
 
-
-    // updateProgressBar(key, value) {
-    //     const bar = this.statBars[key];
-    //     bar.clear();
-    //
-    //     const barX = 50;
-    //     const barY = 200 + Object.keys(this.statBars).indexOf(key) * 30;
-    //     const width = 150;
-    //     const height = 20;
-    //
-    //     // Background
-    //     bar.fillStyle(0x333333);
-    //     bar.fillRect(barX, barY, width, height);
-    //
-    //     // Color by value
-    //     const colorHex = this.colors.getHex(this.getColorByValue(value));
-    //     bar.fillStyle(colorHex);
-    //     bar.fillRect(barX, barY, width * (value / 100), height);
-    // }
 
     getColorByValue(value) {
         const v = Math.floor(value);
@@ -436,7 +342,7 @@ export default class MainScene extends Phaser.Scene {
         // After completing the action, ensure the cat goes back to idle:
         this.animateCat(action, () => {
             // Callback after the action animation is finished.
-            this.catCharacter.play('idle');
+            this.catCharacter.play(`idle-${this.skin}`);
             // Schedule the next random idle behavior.
             this.scheduleRandomIdle();
         });
@@ -479,6 +385,7 @@ export default class MainScene extends Phaser.Scene {
         };
 
         const target = targetMap[action];
+        this.catCharacter.play(`running-${this.skin}`);
 
         this.tweens.add({
             targets: this.catCharacter,
@@ -486,10 +393,10 @@ export default class MainScene extends Phaser.Scene {
             y: target.y,
             duration: 500,
             onComplete: () => {
-                this.catCharacter.play(this.getAnimationForAction(action));
+                this.catCharacter.play(this.getAnimationForAction(action)+'-'+this.skin);
 
                 this.time.delayedCall(2000, () => {
-                    this.catCharacter.play('idle');
+                    this.catCharacter.play(`idle-${this.skin}`);
                     this.catCharacter.x = PLAYER_CONFIG.defaultX;
                     this.catCharacter.y = PLAYER_CONFIG.defaultY;
                 });
@@ -537,7 +444,39 @@ export default class MainScene extends Phaser.Scene {
             this.gameState.stats.happiness = avg;
             this.ui.updateStat("happiness", avg);
 
+            this.updateHealth(elapsedSeconds);
+
             this.updateActionButtonTextures()
+        }
+    }
+
+    /**
+     * Decrease health when food or water < 20,
+     * stop when both ≥20, and rapidly recover when both =100.
+     * If health ≤0, go to GameOverScene.
+     * @param {number} dt — seconds since last tick
+     */
+    updateHealth(dt) {
+        const s = this.gameState.stats;
+        const rate = DECAY_RATES.health;     // 0.5 per sec
+        let h = s.health;
+
+        const foodLow  = s.food  < COLOR_THRESHOLDS.red.min;   // <20
+        const waterLow = s.water < COLOR_THRESHOLDS.red.min;   // <20
+
+        if (foodLow || waterLow) {
+            // decay health
+            h = Math.max(0, h - rate * dt);
+        } else if (s.food === MAX_STATS.food && s.water === MAX_STATS.water) {
+            // rapid recovery: e.g. 5× faster
+            h = Math.min(MAX_STATS.health, h + rate * 5 * dt);
+        }
+        s.health = h;
+        this.ui.updateStat('health', h);
+
+        if (h <= 0) {
+            // immediate Game Over
+            this.scene.start('GameOverScene');
         }
     }
 
@@ -624,10 +563,10 @@ export default class MainScene extends Phaser.Scene {
             this.performWalkBehavior(behavior.duration);
         } else {
             // For simple behaviors that only change the animation
-            this.catCharacter.play(behavior.key);
+            this.catCharacter.play(`${behavior.key}-${this.skin}`);
             // After the specified duration, go back to idle
             this.time.delayedCall(behavior.duration, () => {
-                this.catCharacter.play('idle');
+                this.catCharacter.play(`idle-${this.skin}`);
                 this.scheduleRandomIdle(); // schedule next idle behavior
             });
         }
@@ -637,7 +576,7 @@ export default class MainScene extends Phaser.Scene {
         const dest = this.getRandomPointInPolygon();
 
         // switch to your walk/run anim
-        this.catCharacter.play('running');
+        this.catCharacter.play(`running-${this.skin}`);
 
         // calculate a duration so speed feels constant
         const dx = dest.x - this.catCharacter.x;
@@ -655,9 +594,9 @@ export default class MainScene extends Phaser.Scene {
             ease: 'Linear',
             onComplete: () => {
                 // once arrived, play sleeping (or chill, etc.)
-                this.catCharacter.play('sleeping');
+                this.catCharacter.play(`sleeping-${this.skin}`);
                 this.time.delayedCall(10000, () => {
-                    this.catCharacter.play('idle');
+                    this.catCharacter.play(`idle-${this.skin}`);
                     this.scheduleRandomIdle();
                 });
             }
