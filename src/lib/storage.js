@@ -28,4 +28,17 @@ export default class Storage {
             return null;
         }
     }
+
+    hardReset() {
+        const rawData = localStorage.getItem(this.key);
+        if (!rawData) return null;
+
+        try {
+            localStorage.removeItem(this.key);
+        } catch (e) {
+            console.error('Failed to decode or parse saved data:', e);
+            return null;
+        }
+
+    }
 }

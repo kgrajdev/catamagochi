@@ -55,6 +55,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.audio('achievementSound', 'assets/music/confirmation_002.ogg');
 
         this.load.image('bgImage', 'assets/game-bg.png');
+        this.load.image('bgImage2', 'assets/game-bg-2.png');
         this.load.image('bgBuildingImage', 'assets/building-bg.png');
 
         this.load.audio('random-bg-meow-1', 'assets/music/meowlo-1.mp3');
