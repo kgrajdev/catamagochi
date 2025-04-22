@@ -13,10 +13,11 @@ import ColorScheme from "../lib/ColorScheme";
 import MainNavigation from "../objects/main-navigation";
 import SoundManager from "../objects/sound-manager";
 import AchievementManager from "../lib/AchievementManager";
-import {devTestWalkArea} from "../lib/dev-utilities";
 import GameUI from "../objects/game-ui";
 import NotificationManager from "../lib/notificationManager";
 import TooltipManager from "../lib/tooltipManager";
+import {getRandomPointInPolygon} from "../lib/utils";
+import WelcomeIntro from "../lib/welcome-intro";
 
 export default class MainScene extends Phaser.Scene {
 
@@ -84,10 +85,11 @@ export default class MainScene extends Phaser.Scene {
             }
         };
 
+
         this.skin = this.gameState.selectedDecor.cat;    // e.g. 'AllCatsGrey'
 
         if (!this.gameState.gameSettings.welcomeMessageShown) {
-            this.showWelcomeMessage()
+            new WelcomeIntro(this);
         }
         
         // ====== ACHIEVEMENTS
@@ -123,7 +125,11 @@ export default class MainScene extends Phaser.Scene {
         // ===== UI MANAGEMENT
         this.ui = new GameUI(this, this.gameState, this.colors);
         this.ui.drawUI();
-        // Example: wire up AP click to show details
+
+        // **OFFLINE PROGRESSION**
+        this.applyOfflineProgress();
+
+        // wire up AP click to show details
         this.ui.apText.on("pointerdown", () => this.showAPDetails());
 
         // Start stat decay timer
@@ -207,14 +213,6 @@ export default class MainScene extends Phaser.Scene {
         this.time.delayedCall(delay, () => this.playRandomBackgroundMeowSounds(), null, this);
     }
 
-
-    // Helper function to update coins display (when coins change)
-    updateCoinsDisplay() {
-        if (this.coinText) {
-            this.coinText.setText(`Coins: ${this.gameState.coins}`);
-        }
-    }
-
     // Display a temporary popup with details of today's rewards.
     showAPDetails() {
         this.notifications.showNotification('Daily Reward', `AP: ${DAILY_AWARDS.dailyActionPoints}\nCoins: ${DAILY_AWARDS.cashBase + ((this.gameState.achievementCountTrackers.loginStreak - 1) * DAILY_AWARDS.cashIncrement)}\nCurrent Day-Streak: ${this.gameState.achievementCountTrackers.loginStreak}`, 1250, 'left')
@@ -241,17 +239,6 @@ export default class MainScene extends Phaser.Scene {
             this.add.image(pos.x, pos.y, spriteKey).setDepth(pos.depth);
         });
     }
-
-
-    getColorByValue(value) {
-        const v = Math.floor(value);
-        if (v >= 80) return 'themeProgressBarGreen';
-        if (v >= 60) return 'themeProgressBarYellow';
-        if (v >= 40) return 'themeProgressBarOrange';
-        if (v >= 20) return 'themeProgressBarRed';
-        return 'themeProgressBarBlack';
-    }
-
 
     /**
      * Creates an interactive action buttons.
@@ -540,16 +527,18 @@ export default class MainScene extends Phaser.Scene {
             this.gameState.achievementCountTrackers.loginStreak = loginStreak;
 
             // Update the UI to show the new AP and coin totals.
-            this.updateAPDisplay();
-            this.updateCoinsDisplay();
+            this.updateApCoinsDisplay();
 
             // Save the updated game state.
             this.storage.save('gameState', this.gameState);
         }
     }
-    updateAPDisplay() {
+    updateApCoinsDisplay() {
         if(this.apText){
             this.apText.setText(`AP: ${this.gameState.AP}`);
+        }
+        if (this.coinText) {
+            this.coinText.setText(`Coins: ${this.gameState.coins}`);
         }
     }
     scheduleRandomIdle() {
@@ -586,7 +575,7 @@ export default class MainScene extends Phaser.Scene {
     }
     performWalkBehavior() {
         // pick a valid random point
-        const dest = this.getRandomPointInPolygon();
+        const dest = getRandomPointInPolygon(this.walkAreaPoints, this.walkPolygon);
 
         // switch to your walk/run anim
         this.catCharacter.play(`running-${this.skin}`);
@@ -616,69 +605,50 @@ export default class MainScene extends Phaser.Scene {
         });
     }
 
+    applyOfflineProgress() {
+        const now       = Date.now();
+        const lastSave  = this.gameState.lastSave || now;
+        const elapsedMs = now - lastSave;
+        if (elapsedMs <= 0) return;
 
+        const elapsedSec = elapsedMs / 1000;
+        const s = this.gameState.stats;
 
-    /**
-     * @returns {{x:number,y:number}} a point inside this.walkPolygon
-     */
-    getRandomPointInPolygon() {
-        // 2a) Compute bounding box from the corner array
-        const pts = this.walkAreaPoints;
-        let minX = pts[0].x, maxX = pts[0].x,
-            minY = pts[0].y, maxY = pts[0].y;
-
-        pts.forEach(p => {
-            if (p.x < minX) minX = p.x;
-            if (p.x > maxX) maxX = p.x;
-            if (p.y < minY) minY = p.y;
-            if (p.y > maxY) maxY = p.y;
+        // 1) Decay food / water / tray
+        ['food', 'water', 'tray'].forEach(stat => {
+            s[stat] = Math.max(0, s[stat] - DECAY_RATES[stat] * elapsedSec);
         });
 
-        // 2b) Rejection sample
-        let x, y;
-        do {
-            x = Phaser.Math.Between(minX, maxX);
-            y = Phaser.Math.Between(minY, maxY);
-        } while (!Phaser.Geom.Polygon.Contains(this.walkPolygon, x, y));
+        // 2) Recalc happiness
+        const avg = (s.food + s.water + s.tray) / 3;
+        s.happiness = avg;
 
-        return { x, y };
+        // 3) Health decay or recovery
+        const lowThresh = COLOR_THRESHOLDS.red.min;   // 20
+        if (s.food < lowThresh || s.water < lowThresh) {
+            s.health = Math.max(0, s.health - DECAY_RATES.health * elapsedSec);
+        } else if (s.food === MAX_STATS.food && s.water === MAX_STATS.water) {
+            // rapid recovery (5×)
+            s.health = Math.min(MAX_STATS.health, s.health + DECAY_RATES.health * 5 * elapsedSec);
+        }
+
+        // 4) Update lastSave and persist
+        this.gameState.lastSave = now;
+        this.storage.save(this.gameState);
+
+        // 5) Push to UI
+        this.ui.updateStat('food', s.food);
+        this.ui.updateStat('water', s.water);
+        this.ui.updateStat('tray', s.tray);
+        this.ui.updateStat('happiness', s.happiness);
+        this.ui.updateStat('health', s.health);
+
+        // 6) If health hit zero while you were away, go Game Over
+        if (s.health <= 0) {
+            this.scene.start('GameOverScene');
+        }
+
+        // this.notifications.showNotification('Offline Progress', 'You were away for ')
     }
 
-
-    showWelcomeMessage() {
-
-        this.welcomeContainer = this.add.container(this.game.config.width/2, this.game.config.height/2).setDepth(9999);
-
-        const welcomeBg = this.add.rectangle(0, 0, this.game.config.width-180, this.game.config.height-145, this.colors.getHex('themePrimaryDark', 0.5)).setInteractive();
-
-        const welcomeTitle = this.add.text(0, -190, `Welcome to Catamagochi`, {
-                fontFamily: 'SuperComic',
-                fontSize: '22px',
-                color: this.colors.get('themeLight'),
-                align: 'center',
-            }).setOrigin(0.5)
-
-        const welcomeMessage = this.add.text(welcomeBg.width-welcomeBg.width, welcomeTitle.y+welcomeTitle.height+125,
-            `Getting Started:\n\n- You have a fixed number of Action Points (AP) per day. \nUse them wisely to interact with your companion.\n\n- Every day you play you will be awarded with new AP and Coins.\nThe longer the play streak the bigger the awards.\n\n- Spend coins in Store to unlock new decorations, \nand even different kitty skins.`, {
-                fontFamily: 'SuperComic',
-                fontSize: '16px',
-                color: this.colors.get('themeLight'),
-                align: 'left',
-            }).setOrigin(0.5)
-
-        const welcomeButton = this.add.text(0, welcomeMessage.height, 'OK', {
-            fontFamily: 'SuperComic',
-            fontSize: '20px',
-            color: this.colors.get('themeLight'),
-            align: 'center',
-        }).setInteractive({useHandCursor: true})
-            .on('pointerdown', () => {
-                this.gameState.gameSettings.welcomeMessageShown = true;
-                this.storage.save(this.gameState);
-                this.welcomeContainer.destroy();
-            })
-
-
-        this.welcomeContainer.add([welcomeBg, welcomeTitle, welcomeMessage, welcomeButton])
-    }
 }

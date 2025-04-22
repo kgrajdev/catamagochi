@@ -21,7 +21,8 @@ export default class SaveExportImport {
 
         // Retrieve the save data and encode it in Base64.
         const saveData = this.storage.load() || '';
-        const encodedData = btoa(saveData);
+        const saveDataJson = JSON.stringify(saveData);
+        const encodedData = btoa(saveDataJson);
 
         // Define modal dimensions.
         const modalWidth = this.scene.scale.width * 0.6;
@@ -171,11 +172,12 @@ export default class SaveExportImport {
             .setDepth(999)
             .setInteractive({ useHandCursor: true })
             .on('pointerdown', () => {
-                const encodedData = inputElement.node.value.trim();
-                if (encodedData.length >= 1) {
+                const rawEncodedData = inputElement.node.value.trim();
+                if (rawEncodedData.length >= 1) {
                     try {
-                        const decodedData = atob(encodedData);
-                        this.storage.save(decodedData)
+                        const decodedData = atob(rawEncodedData);
+                        const decodedJson = JSON.parse(decodedData);
+                        this.storage.save(decodedJson)
                         console.log('Save imported successfully');
                         overlay.destroy();
                         modalBg.destroy();
@@ -187,10 +189,6 @@ export default class SaveExportImport {
                     } catch (e) {
                         console.error('Invalid save data');
                     }
-                    importButton.setStyle({
-                        color: this.colors.get('themePrimaryLight'),
-                        backgroundColor: this.colors.get('themePrimaryDark')
-                    })
                 }
             })
             .on('pointerover', () => {

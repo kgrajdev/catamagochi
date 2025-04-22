@@ -109,7 +109,7 @@ export const DECAY_RATES = {
     food: 0.02,    // per second or tick
     water: 0.02,
     tray: 0.01,
-    health: 0.5
+    health: 0.1
 };
 
 export const DAILY_AWARDS = {
